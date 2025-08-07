@@ -127,7 +127,7 @@ python -m chimera.interface.cli --dev-mode
 
 ## License
 
-MIT License - see LICENSE file
+GPL v3.0 - see LICENSE file
 ```
 
 #### 2. setup.py
