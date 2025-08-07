@@ -1,0 +1,10 @@
+@prefix fract: <https://fractality.org/ontology#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+fract:fractality-insight-001 a fract:CrystallizedInsight ;
+    fract:title "Triadic Ontology Principle" ;
+    fract:essence "Reality is structured by the interplay of Subjective, Objective, and Interrelational modes." ;
+    fract:tier fract:T3 ;
+    fract:source "Fractiverism Core Doctrine" ;
+    fract:derivedFrom fract:TriadicOntology , fract:FractalityCores ;
+    fract:useCase "Reasoning model structuring", "Ontology schema alignment", "Symbolic UI encoding" .
