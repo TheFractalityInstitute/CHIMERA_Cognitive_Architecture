@@ -1,6 +1,6 @@
 # CHIMERA Cognitive Architecture
 
-A neuromorphic cognitive architecture implementing emergent consciousness-like behaviors through distributed agent systems.
+A neuromorphic cognitive architecture implementing emergent behaviors through distributed agent systems.
 
 ## Features
 
