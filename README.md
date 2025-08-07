@@ -38,6 +38,83 @@ CHIMERA uses a modular agent-based architecture where:
 
 See [docs/architecture.md](docs/architecture.md) for detailed information.
 
+### Repository Structure
+
+```
+chimera-cognitive-architecture/
+├── README.md
+├── LICENSE (MIT or Apache 2.0)
+├── setup.py
+├── requirements.txt
+├── .gitignore
+├── docs/
+│   ├── architecture.md
+│   ├── getting-started.md
+│   ├── termux-setup.md
+│   └── api-reference.md
+├── chimera/
+│   ├── __init__.py
+│   ├── core/
+│   │   ├── __init__.py
+│   │   ├── agent.py          # Base TemporalAgent class
+│   │   ├── message.py        # NeuralMessage and types
+│   │   ├── clock.py          # PhaseLockedClock
+│   │   └── bus.py            # DualBusSystem
+│   ├── agents/
+│   │   ├── __init__.py
+│   │   ├── sensory.py        # All sensory agents
+│   │   ├── pattern.py        # Pattern recognition
+│   │   ├── integration.py    # Integration agent
+│   │   ├── executive.py      # Executive control
+│   │   ├── drive.py          # Drive system
+│   │   ├── planning.py       # Hierarchical planning
+│   │   ├── metacognitive.py  # Self-monitoring
+│   │   ├── theory_of_mind.py # Social cognition
+│   │   └── concept.py        # Concept formation
+│   ├── memory/
+│   │   ├── __init__.py
+│   │   ├── semantic.py       # SemanticMemory
+│   │   ├── episodic.py       # Episode buffers
+│   │   └── working.py        # Working memory
+│   ├── learning/
+│   │   ├── __init__.py
+│   │   ├── td_learning.py    # TD learning system
+│   │   ├── hebbian.py        # Connection updates
+│   │   └── crystallization.py # Insight crystallization
+│   ├── language/
+│   │   ├── __init__.py
+│   │   ├── acquisition.py    # Language learning
+│   │   ├── grounding.py      # Symbol grounding
+│   │   └── generation.py     # Response generation
+│   ├── interface/
+│   │   ├── __init__.py
+│   │   ├── cli.py           # Terminal interface
+│   │   ├── visualization.py  # Status displays
+│   │   └── conversation.py   # Chat interface
+│   └── utils/
+│       ├── __init__.py
+│       ├── config.py         # Configuration management
+│       ├── logging.py        # Logging utilities
+│       └── storage.py        # Persistence layer
+├── tests/
+│   ├── __init__.py
+│   ├── test_core.py
+│   ├── test_agents.py
+│   ├── test_memory.py
+│   └── test_integration.py
+├── examples/
+│   ├── basic_conversation.py
+│   ├── concept_learning.py
+│   ├── multi_agent.py
+│   └── crystallization_demo.py
+├── scripts/
+│   ├── setup_termux.sh
+│   ├── install_deps.sh
+│   └── quick_start.py
+└── data/
+    └── .gitkeep
+```
+
 ## Development
 
 ```bash
