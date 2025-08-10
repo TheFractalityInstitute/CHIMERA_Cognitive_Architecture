@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHIMERA Cognitive Interface</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #161b3d 100%);
+            color: #e0e8f0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Header */
+        header {
+            background: rgba(10, 14, 39, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .header-stats {
+            display: flex;
+            gap: 2rem;
+            font-size: 0.9rem;
+        }
+        
+        .stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #6366f1;
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+        
+        /* Main Layout */
+        .container {
+            flex: 1;
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+            overflow: hidden;
+        }
+        
+        /* Chat Section */
+        .chat-section {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            background: rgba(22, 27, 61, 0.5);
+            border-radius: 12px;
+            border: 1px solid rgba(99, 102, 241, 0.1);
+            overflow: hidden;
+        }
+        
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .message {
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            max-width: 80%;
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .user-message {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        }
+        
+        .chimera-message {
+            align-self: flex-start;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+        
+        .curiosity-message {
+            align-self: flex-start;
+            background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+            border-left: 4px solid #f9a8d4;
+        }
+        
+        .milestone-message {
+            align-self: center;
+            background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .message-confidence {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            margin-top: 0.25rem;
+        }
+        
+        /* Input Area */
+        .input-area {
+            padding: 1rem;
+            background: rgba(10, 14, 39, 0.5);
+            border-top: 1px solid rgba(99, 102, 241, 0.1);
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .input-field {
+            flex: 1;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 8px;
+            padding: 0.75rem;
+            color: #e0e8f0;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: #6366f1;
+            background: rgba(30, 41, 59, 0.8);
+        }
+        
+        button {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        button:hover {
+            transform: scale(1.05);
+        }
+        
+        /* Side Panel */
+        .side-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .panel-section {
+            background: rgba(22, 27, 61, 0.5);
+            border-radius: 12px;
+            border: 1px solid rgba(99, 102, 241, 0.1);
+            padding: 1rem;
+        }
+        
+        .panel-header {
+            font-weight: bold;
+            margin-bottom: 0.75rem;
+            color: #6366f1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        /* Thoughts Display */
+        .thoughts-list {
+            max-height: 200px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .thought {
+            padding: 0.5rem;
+            background: rgba(30, 41, 59, 0.3);
+            border-radius: 6px;
+            font-size: 0.9rem;
+            border-left: 3px solid #6366f1;
+        }
+        
+        .thought-crystallized {
+            border-left-color: #10b981;
+        }
+        
+        /* Concepts Grid */
+        .concepts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 0.5rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .concept {
+            padding: 0.5rem;
+            background: rgba(30, 41, 59, 0.3);
+            border-radius: 6px;
+            text-align: center;
+            font-size: 0.9rem;
+            border: 1px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .concept:hover {
+            border-color: #6366f1;
+            background: rgba(99, 102, 241, 0.1);
+        }
+        
+        .concept-confidence {
+            font-size: 0.7rem;
+            opacity: 0.6;
+        }
+        
+        /* Development Stage */
+        .development-stage {
+            padding: 1rem;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .action-button {
+            padding: 0.5rem 1rem;
+            background: rgba(99, 102, 241, 0.2);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .action-button:hover {
+            background: rgba(99, 102, 241, 0.3);
+        }
+        
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .header-stats {
+                display: none;
+            }
+            
+            .side-panel {
+                display: none;
+            }
+        }
+        
+        /* Loading Spinner */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(99, 102, 241, 0.3);
+            border-top-color: #6366f1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Teach Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: #1e293b;
+            padding: 2rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+        }
+        
+        .modal-header {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .modal-input {
+            width: 100%;
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 8px;
+            color: #e0e8f0;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="logo">
+            <div class="status-indicator"></div>
+            CHIMERA
+        </div>
+        <div class="header-stats">
+            <div class="stat">
+                <div class="stat-value" id="thought-count">0</div>
+                <div class="stat-label">Thoughts</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="concept-count">0</div>
+                <div class="stat-label">Concepts</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="conversation-count">0</div>
+                <div class="stat-label">Conversations</div>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Chat Section -->
+        <div class="chat-section">
+            <div class="messages" id="messages"></div>
+            <div class="input-area">
+                <input type="text" class="input-field" id="message-input" 
+                       placeholder="Talk to CHIMERA..." autofocus>
+                <button onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+        
+        <!-- Side Panel -->
+        <div class="side-panel">
+            <!-- Development Stage -->
+            <div class="panel-section">
+                <div class="panel-header">Development Stage</div>
+                <div class="development-stage" id="development-stage">
+                    Initializing...
+                </div>
+            </div>
+            
+            <!-- Recent Thoughts -->
+            <div class="panel-section">
+                <div class="panel-header">
+                    Recent Thoughts
+                    <div class="spinner" id="thoughts-spinner" style="display:none"></div>
+                </div>
+                <div class="thoughts-list" id="thoughts-list"></div>
+            </div>
+            
+            <!-- Concepts -->
+            <div class="panel-section">
+                <div class="panel-header">Known Concepts</div>
+                <div class="concepts-grid" id="concepts-grid"></div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="panel-section">
+                <div class="panel-header">Actions</div>
+                <div class="action-buttons">
+                    <button class="action-button" onclick="showTeachModal()">Teach Concept</button>
+                    <button class="action-button" onclick="requestCuriosity()">Ask Curiosity</button>
+                    <button class="action-button" onclick="saveMemory()">Save Memory</button>
+                    <button class="action-button" onclick="exportData()">Export Data</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Teach Modal -->
+    <div class="modal" id="teach-modal">
+        <div class="modal-content">
+            <div class="modal-header">Teach CHIMERA</div>
+            <input type="text" class="modal-input" id="teach-concept" placeholder="Concept (e.g., 'tree')">
+            <input type="text" class="modal-input" id="teach-definition" placeholder="Definition (e.g., 'A living plant with trunk and leaves')">
+            <input type="text" class="modal-input" id="teach-examples" placeholder="Examples (comma-separated)">
+            <div class="modal-buttons">
+                <button class="action-button" onclick="hideTeachModal()">Cancel</button>
+                <button onclick="teachConcept()">Teach</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // WebSocket connection
+        const socket = io();
+        let sessionId = null;
+        
+        // DOM elements
+        const messagesEl = document.getElementById('messages');
+        const inputEl = document.getElementById('message-input');
+        const thoughtsListEl = document.getElementById('thoughts-list');
+        const conceptsGridEl = document.getElementById('concepts-grid');
+        const developmentStageEl = document.getElementById('development-stage');
+        
+        // Connect to server
+        socket.on('connect', () => {
+            console.log('Connected to CHIMERA');
+            updateStatus();
+            loadThoughts();
+            loadConcepts();
+        });
+        
+        socket.on('connected', (data) => {
+            sessionId = data.session_id;
+            addMessage('CHIMERA: ' + data.message, 'chimera');
+        });
+        
+        socket.on('disconnect', () => {
+            console.log('Disconnected from CHIMERA');
+            document.querySelector('.status-indicator').style.background = '#ef4444';
+        });
+        
+        // Handle responses
+        socket.on('response', (data) => {
+            let message = data.text;
+            if (data.confidence !== undefined) {
+                message += ` [${Math.round(data.confidence * 100)}% understood]`;
+            }
+            addMessage(message, 'chimera');
+            
+            // Update stats
+            document.getElementById('thought-count').textContent = data.thoughts_formed || '0';
+            if (data.words_known) {
+                document.getElementById('concept-count').textContent = data.words_known;
+            }
+            if (data.development_stage) {
+                developmentStageEl.textContent = data.development_stage;
+            }
+            
+            // Refresh thoughts and concepts
+            setTimeout(() => {
+                loadThoughts();
+                loadConcepts();
+            }, 500);
+        });
+        
+        // Handle curiosities
+        socket.on('curiosity', (data) => {
+            const message = `[Curiosity] ${data.question}`;
+            addMessage(message, 'curiosity');
+            
+            if (data.spontaneous) {
+                // Play a subtle notification sound if spontaneous
+                playNotificationSound();
+            }
+        });
+        
+        // Handle milestones
+        socket.on('milestone', (data) => {
+            addMessage(`🎉 ${data.text}`, 'milestone');
+        });
+        
+        // Handle stats updates
+        socket.on('stats_update', (stats) => {
+            if (stats.total_thoughts !== undefined) {
+                document.getElementById('thought-count').textContent = stats.total_thoughts;
+            }
+            if (stats.total_concepts !== undefined) {
+                document.getElementById('concept-count').textContent = stats.total_concepts;
+            }
+            if (stats.total_conversations !== undefined) {
+                document.getElementById('conversation-count').textContent = stats.total_conversations;
+            }
+        });
+        
+        // Send message
+        function sendMessage() {
+            const text = inputEl.value.trim();
+            if (!text) return;
+            
+            addMessage(text, 'user');
+            socket.emit('message', { text: text });
+            inputEl.value = '';
+        }
+        
+        // Add message to chat
+        function addMessage(text, type) {
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${type}-message`;
+            messageEl.textContent = text;
+            messagesEl.appendChild(messageEl);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+        
+        // Load thoughts
+        async function loadThoughts() {
+            try {
+                const response = await fetch('/api/thoughts');
+                const thoughts = await response.json();
+                
+                thoughtsListEl.innerHTML = '';
+                thoughts.slice(0, 10).forEach(thought => {
+                    const thoughtEl = document.createElement('div');
+                    thoughtEl.className = `thought ${thought.type === 'crystallized' ? 'thought-crystallized' : ''}`;
+                    thoughtEl.textContent = thought.content || 'Unnamed thought';
+                    thoughtsListEl.appendChild(thoughtEl);
+                });
+            } catch (error) {
+                console.error('Error loading thoughts:', error);
+            }
+        }
+        
+        // Load concepts
+        async function loadConcepts() {
+            try {
+                const response = await fetch('/api/concepts');
+                const concepts = await response.json();
+                
+                conceptsGridEl.innerHTML = '';
+                concepts.slice(0, 20).forEach(concept => {
+                    const conceptEl = document.createElement('div');
+                    conceptEl.className = 'concept';
+                    conceptEl.innerHTML = `
+                        ${concept.term}
+                        <div class="concept-confidence">${Math.round(concept.confidence * 100)}%</div>
+                    `;
+                    conceptsGridEl.appendChild(conceptEl);
+                });
+            } catch (error) {
+                console.error('Error loading concepts:', error);
+            }
+        }
+        
+        // Update status
+        async function updateStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const status = await response.json();
+                
+                document.getElementById('thought-count').textContent = status.thoughts || '0';
+                document.getElementById('concept-count').textContent = status.concepts || '0';
+                document.getElementById('conversation-count').textContent = status.conversations || '0';
+                
+                if (status.development_stage) {
+                    developmentStageEl.textContent = status.development_stage;
+                }
+                
+                document.querySelector('.status-indicator').style.background = 
+                    status.online ? '#10b981' : '#ef4444';
+            } catch (error) {
+                console.error('Error updating status:', error);
+            }
+        }
+        
+        // Request curiosity
+        function requestCuriosity() {
+            socket.emit('request_curiosity');
+        }
+        
+        // Save memory
+        async function saveMemory() {
+            try {
+                const response = await fetch('/api/memory/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const result = await response.json();
+                if (result.success) {
+                    addMessage(`Memory saved: ${result.path}`, 'chimera');
+                }
+            } catch (error) {
+                console.error('Error saving memory:', error);
+            }
+        }
+        
+        // Export data
+        function exportData() {
+            window.open('/api/export/json', '_blank');
+        }
+        
+        // Teach modal functions
+        function showTeachModal() {
+            document.getElementById('teach-modal').classList.add('active');
+        }
+        
+        function hideTeachModal() {
+            document.getElementById('teach-modal').classList.remove('active');
+        }
+        
+        function teachConcept() {
+            const concept = document.getElementById('teach-concept').value;
+            const definition = document.getElementById('teach-definition').value;
+            const examples = document.getElementById('teach-examples').value
+                .split(',').map(e => e.trim()).filter(e => e);
+            
+            if (concept && definition) {
+                socket.emit('teach', {
+                    concept: concept,
+                    explanation: definition,
+                    examples: examples
+                });
+                
+                hideTeachModal();
+                
+                // Clear inputs
+                document.getElementById('teach-concept').value = '';
+                document.getElementById('teach-definition').value = '';
+                document.getElementById('teach-examples').value = '';
+            }
+        }
+        
+        // Play notification sound
+        function playNotificationSound() {
+            // Create a simple notification beep
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.2);
+        }
+        
+        // Keyboard shortcuts
+        inputEl.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        // Periodic updates
+        setInterval(updateStatus, 30000);  // Update every 30 seconds
+        
+        // Initial load
+        updateStatus();
+    </script>
+</body>
+</html>
