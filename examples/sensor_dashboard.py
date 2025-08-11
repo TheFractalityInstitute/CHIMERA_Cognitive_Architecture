@@ -55,8 +55,14 @@ def main():
                         v = value.get('values', [0,0,0])
                         print(f"  Mag:   X={v[0]:6.1f} Y={v[1]:6.1f} Z={v[2]:6.1f}")
                     elif "Orientation" in key:
-                        v = value.get('values', [0,0,0])
-                        print(f"  Orient: Az={v[0]:6.1f} Pi={v[1]:6.1f} Ro={v[2]:6.1f}")
+    v = value.get('values', [])
+    if len(v) >= 3:
+        print(f"  Orient: Az={v[0]:6.1f} Pi={v[1]:6.1f} Ro={v[2]:6.1f}")
+    elif len(v) >= 1:
+        print(f"  Orient: {v[0]:6.1f}")
+    else:
+        print(f"  Orient: No data")
+
                 
                 # Environment Sensors
                 print("\n🌍 ENVIRONMENT SENSORS:")
