@@ -232,27 +232,26 @@ class CHIMERAComplete:
         return location_name
     
     def get_garmin_data(self):
-        """Simulate Garmin data - replace with real Health Sync integration"""
-        # In real implementation, read from Health Sync database
-        # For now, simulate realistic data based on activity
-        base_hr = 70
-        
-        if self.current_state['activity'] == '🏃 Running':
-            hr = base_hr + np.random.randint(40, 60)
-        elif self.current_state['activity'] == '🚶 Walking':
-            hr = base_hr + np.random.randint(10, 30)
-        else:
-            hr = base_hr + np.random.randint(-10, 10)
-        
-        hrv = 50 + np.random.randn() * 15
-        stress = max(0, min(100, 50 + (hr - 70) * 2 + np.random.randn() * 10))
-        
-        return {
-            'heart_rate': hr,
-            'hrv': hrv,
-            'stress': stress,
-            'body_battery': max(5, 100 - stress + np.random.randn() * 5)
-        }
+    """Get REAL Garmin data from Fenix 5x+"""
+    # Initialize Garmin integration if not already done
+    if not hasattr(self, 'garmin'):
+        from garmin_integration import GarminFenix5xIntegration
+        self.garmin = GarminFenix5xIntegration()
+    
+    # Get real metrics
+    metrics = self.garmin.get_current_metrics()
+    
+    # Return actual data with defaults for missing values
+    return {
+        'heart_rate': metrics.get('heart_rate', 70),
+        'hrv': metrics.get('hrv', 50),
+        'stress': metrics.get('stress', 50),
+        'body_battery': metrics.get('body_battery', 50),
+        'steps': metrics.get('steps', 0),
+        'spo2': metrics.get('spo2', 95),
+        'respiration': metrics.get('respiration', 14),
+        'calories': metrics.get('calories', 0)
+    }
     
     def generate_insights(self):
         """Generate insights from learned patterns"""
