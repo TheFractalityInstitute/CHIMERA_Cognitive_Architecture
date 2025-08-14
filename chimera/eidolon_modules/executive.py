@@ -293,72 +293,49 @@ class AnteriorCingulate:
 
 # ============= The Executive Eidolon =============
 
-class ExecutiveEidolon:
+class EnhancedExecutiveEidolon:
     """
-    The Executive Module - Prefrontal Cortex of CHIMERA
-    Coordinates without dictating, synthesizes inputs, makes decisions
+    Executive Module with dopamine-inspired resource allocation
+    Based on Westbrook et al., 2025 findings
     """
     
-    def __init__(self, name: str = "Executive"):
-        self.name = name
-        self.role = "coordination_and_decision_making"
+    def __init__(self):
+        # Dopamine-inspired parameters
+        self.dopamine_level = 1.0  # Baseline
+        self.wm_reliance = 0.5     # ρ parameter from paper
+        self.rl_learning_rate = 0.1  # α_RL from paper
         
-        # Prefrontal regions
-        self.dlpfc = DorsolateralPFC()
-        self.vmpfc = VentromedialPFC()
-        self.acc = AnteriorCingulate()
-        
-        # Goal management
-        self.goal_hierarchy = {}  # goal_id -> Goal
-        self.active_goals = set()
-        self.goal_stack = []  # For nested goal pursuit
-        
-        # Resource management
-        self.resource_allocation = {
-            'attention': 1.0,
-            'memory': 1.0,
-            'processing': 1.0,
-            'energy': 1.0
+        # Resource allocation now considers WM vs RL tradeoff
+        self.resource_modes = {
+            'high_dopamine': {
+                'wm_weight': 0.7,  # Favor WM when dopamine high
+                'rl_rate': 0.15,   # Faster RL
+                'effort_discount': 0.3  # Lower effort costs
+            },
+            'low_dopamine': {
+                'wm_weight': 0.3,
+                'rl_rate': 0.05,
+                'effort_discount': 0.7
+            }
         }
         
-        # Module coordination
-        self.module_expertise = {
-            'sensory': ['perception', 'environment', 'detection'],
-            'memory': ['recall', 'storage', 'episodic', 'semantic'],
-            'language': ['communication', 'understanding', 'expression'],
-            'logical': ['reasoning', 'calculation', 'analysis'],
-            'interoceptive': ['internal', 'energy', 'health'],
-            'social': ['interaction', 'emotion', 'empathy']
-        }
-        
-        # Decision tracking
-        self.decision_history = deque(maxlen=100)
-        self.pending_decisions = {}
-        
-        # Inhibitory control
-        self.suppressed_actions = set()
-        self.inhibition_strength = defaultdict(float)
-        
-        # Emergency overrides
-        self.emergency_mode = False
-        self.emergency_protocols = {
-            'danger': self._danger_protocol,
-            'system_failure': self._system_failure_protocol,
-            'ethical_violation': self._ethical_violation_protocol
-        }
-        
-        # Bus connection
-        self.bus = None
-        self.connector = None
-        
-        # State
-        self.current_situation = {}
-        self.confidence_threshold = 0.6
-        
-    async def initialize(self, bus_url: str = "ws://127.0.0.1:7860"):
-        """Initialize connection to message bus"""
-        self.connector = ModuleConnector(self.name, bus_url)
-        await self.connector.connect()
+    def modulate_by_performance(self, reward_prediction_error):
+        """
+        Dynamically adjust dopamine based on performance
+        Mimics phasic dopamine bursts
+        """
+        if reward_prediction_error > 0:
+            # Positive surprise - dopamine burst
+            self.dopamine_level = min(2.0, self.dopamine_level * 1.1)
+            
+            # Shift toward WM for fast learning
+            self.wm_reliance = min(1.0, self.wm_reliance + 0.05)
+        else:
+            # Negative surprise - dopamine dip
+            self.dopamine_level = max(0.5, self.dopamine_level * 0.95)
+            
+            # Shift toward RL for robust learning
+            self.wm_reliance = max(0.0, self.wm_reliance - 0.05)
         
     # ============= Core Executive Functions =============
     
