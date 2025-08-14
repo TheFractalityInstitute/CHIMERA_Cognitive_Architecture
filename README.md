@@ -49,35 +49,49 @@ CHIMERA (Cognitive Heterogeneous Intelligence with Multi-Agent Emergent Reasonin
 ```
 CHIMERA_Cognitive_Architecture/
 ├── chimera/
-│   ├── core/               # Base classes and infrastructure
-│   │   ├── base.py         # CognitiveAgent base class
-│   │   ├── bus.py          # Inter-agent communication
-│   │   └── clock.py        # Phase synchronization
-│   │
-│   ├── agents/             # Cognitive agent ecosystem
-│   │   ├── sensory.py      # Visual, auditory, tactile
+│   ├── core/                   # Base classes and infrastructure
+│   │   ├── base_eidolon.py     # NEW: Base class for all Eidolons
+│   │   ├── message_bus.py      # Message passing system
+│   │   ├── clock.py            # Phase synchronization
+|   |   ├── council.py          # NEW: Council orchestrator
+│   |   └── base_eidolon.py     # NEW: Base class for all Eidolons
+|   |   |
+│   |   ├── eidolon_modules/    # The 6 faces of the cube
+|   │   |   ├── executive.py    # Executive (prefrontal cortex)
+|   │   |   ├── sensory.py      # Sensory (already done!)
+|   │   |   ├── memory_wm.py    # NEW: Working Memory
+|   │   |   ├── memory_rl.py    # NEW: Reinforcement Learning Memory
+|   │   |   ├── language.py     # Language processing
+|   │   |   └── interoceptive.py  # Body state monitoring
+|   │   |
+|   |   └── utils/              # Helper utilities
+|   |   ├── dopamine.py         # NEW: Dopamine dynamics
+|   |   └── theta.py            # NEW: Theta oscillation utilities
+|   |
+│   ├── agents/                 # Cognitive agent ecosystem
+│   │   ├── sensory.py          # Visual, auditory, tactile
 │   │   ├── crystallization.py  # Insight formation
-│   │   ├── executive.py    # High-level control
-│   │   └── ...             # Other specialized agents
+│   │   ├── executive.py        # High-level control
+│   │   └── ...                 # Other specialized agents
 │   │
-│   ├── memory/             # Persistence and retrieval
-│   │   ├── manager.py      # Unified memory interface
-│   │   ├── persistence.py  # Database layer
-│   │   └── cache.py        # Intelligent caching
+│   ├── memory/                 # Persistence and retrieval
+│   │   ├── manager.py          # Unified memory interface
+│   │   ├── persistence.py      # Database layer
+│   │   └── cache.py            # Intelligent caching
 │   │
-│   ├── learning/           # Organic learning system
-│   │   ├── organic.py      # Natural language acquisition
-│   │   └── bootstrap.py    # Minimal starting knowledge
+│   ├── learning/               # Organic learning system
+│   │   ├── organic.py          # Natural language acquisition
+│   │   └── bootstrap.py        # Minimal starting knowledge
 │   │
-│   └── ethics/             # Ethical reasoning
+│   └── ethics/                 # Ethical reasoning
 │       └── fractality_charter.py  # Core principles
 │
-├── web/                    # Web interface
-│   ├── app.py             # Flask/SocketIO server
-│   └── templates/         # HTML interface
+├── web/                        # Web interface
+│   ├── app.py                  # Flask/SocketIO server
+│   └── templates/              # HTML interface
 │
-└── data/                  # Persistent storage
-    └── chimera.db         # SQLite database
+└── data/                       # Persistent storage
+    └── chimera.db              # SQLite database
 ```
 
 ## 🚀 Quick Start
