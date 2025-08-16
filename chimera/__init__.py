@@ -49,3 +49,9 @@ class CHIMERA:
             
         # Let them run
         await asyncio.gather(*tasks)
+
+__all__ = [
+    'CHIMERAComplete',
+    'BiologicallyGroundedCouncil', 
+    'CHIMERACollectiveServer'
+]
