@@ -1,0 +1,21 @@
+# Dockerfile.mobile
+FROM python:3.9-slim
+
+# Install Android SDK/NDK if needed
+RUN apt-get update && apt-get install -y \
+    android-sdk \
+    build-essential
+
+# Copy combined code
+COPY chimera_core/ /app/chimera_core/
+COPY mobile/ /app/mobile/
+
+WORKDIR /app
+
+# Install Python dependencies
+RUN pip install -r requirements.txt
+
+# Build mobile app
+RUN python scripts/build_mobile.py
+
+CMD ["python", "-m", "chimera_core.mobile"]
