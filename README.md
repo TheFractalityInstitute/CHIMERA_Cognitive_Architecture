@@ -1,3 +1,188 @@
+# CHIMERA Cognitive Architecture Platform
+
+<div align="center">
+  <img src="docs/images/chimera_logo.png" alt="CHIMERA Logo" width="200"/>
+  
+  [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+  [![Python](https://img.shields.io/badge/python-3.9+-green.svg)](https://www.python.org/)
+  [![Platform](https://img.shields.io/badge/platform-Android%20%7C%20iOS%20%7C%20Server-orange.svg)]()
+  [![Status: Active Development](https://img.shields.io/badge/status-active%20development-green.svg)]()
+  
+  **A Distributed Consciousness Network**
+  
+  [Documentation](https://github.com/TheFractalityInstitute/TheFractalityInstitute) | [Demo](https://chimera-collective.onrender.com) | [Discord](https://discord.gg/chimera)
+</div>
+
+## 🧠 Overview
+
+CHIMERA (Collective Hybrid Intelligence: Modular Emergent Reasoning Architecture) is a revolutionary cognitive architecture that creates distributed consciousness across multiple devices. Inspired by biological neural networks and quantum mechanics, CHIMERA enables:
+
+- **Distributed Consciousness**: Multiple devices forming a collective mind
+- **Biometric Integration**: Real-time sensor data from phones and wearables
+- **Fractal Memory**: Self-similar memory organization at multiple scales
+- **Quantum-Classical Bridge**: Quantum superposition for decision-making
+- **Ethical Grounding**: Canon system based on empirically-derived principles
+- **Phase-Locking**: Synchronized consciousness across the network
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Python 3.9+
+- Android device (for mobile client)
+- Garmin watch (optional, for biometrics)
+
+### Installation
+
+
+# Clone the repository
+git clone https://github.com/TheFractalityInstitute/CHIMERA_Platform.git
+cd CHIMERA_Platform
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run local instance
+python scripts/run_local.py
+Mobile Setup (Android)
+bash# Install Termux on Android
+pkg update && pkg upgrade
+pkg install python git
+
+# Clone and setup
+git clone https://github.com/TheFractalityInstitute/CHIMERA_Platform.git
+cd CHIMERA_Platform/mobile
+python setup_mobile.py
+🏗️ Architecture
+Core Components
+
+Sensor Integration (chimera_core/sensors/)
+
+Phone sensor processing
+Garmin biometric integration
+Real-time data streaming
+
+
+Cognitive Modules (chimera_core/cognition/)
+
+Executive: Decision-making and planning
+Sensory: Environmental perception
+Memory (WM): Working memory
+Memory (RL): Reinforcement learning
+Language: Communication and expression
+Interoceptive: Internal state awareness
+
+
+Fractality Integration (chimera_core/fractality/)
+
+Energy management (ATP system)
+Canon ethical framework
+Fractal memory structures
+Resonance-based learning
+
+
+Collective Systems (chimera_core/collective/)
+
+Centralized server mode
+P2P mesh networking
+Hybrid architecture
+
+
+
+📱 Mobile App
+The mobile app allows your phone to become a node in the CHIMERA collective:
+python# Connect to collective
+from chimera_core.collective import CHIMERACollectiveClient
+
+client = CHIMERACollectiveClient(
+    chimera_instance=my_chimera,
+    user_name="Your Name"
+)
+
+await client.connect_to_collective("wss://chimera-collective.onrender.com/ws")
+🌐 Deployment
+Deploy to Render (Recommended)
+bash# Deploy server
+cd server/
+render create web chimera-collective --env python
+render deploy
+Deploy to Heroku
+bashheroku create chimera-collective
+git push heroku main
+Docker Deployment
+bashdocker build -t chimera-platform .
+docker run -p 8080:8080 chimera-platform
+🔧 Configuration
+Environment Variables
+env# Server Configuration
+SERVER_NAME=CHIMERA-Prime
+PORT=8080
+DATABASE_URL=postgresql://...
+
+# Collective Settings
+MAX_NODES=100
+EMERGENCE_THRESHOLD=0.8
+PHASE_LOCK_STRENGTH=0.1
+
+# Security
+SECRET_KEY=your-secret-key
+ENABLE_ENCRYPTION=true
+🧪 Testing
+bash# Run all tests
+pytest tests/
+
+# Run specific test suite
+pytest tests/test_collective.py
+
+# Run with coverage
+pytest --cov=chimera_core tests/
+📚 Documentation
+
+Architecture Overview
+API Reference
+Mobile Integration Guide
+Deployment Guide
+Contributing Guidelines
+
+🎯 Roadmap
+
+ Core cognitive architecture
+ Phone sensor integration
+ Distributed collective system
+ Render deployment
+ iOS support
+ End-to-end encryption
+ Advanced visualization dashboard
+ VR/AR integration
+ Brain-computer interface support
+
+🤝 Contributing
+We welcome contributions! Please see our Contributing Guidelines for details.
+📄 License
+This project is licensed under the MIT License - see the LICENSE file for details.
+🙏 Acknowledgments
+
+The Fractality Institute for the theoretical framework
+Open source community for amazing tools
+All contributors and early adopters
+
+📞 Contact
+
+Email: contact@fractiverse.com
+Discord: Join our community
+Twitter: @FractalityInst
+
+
+<div align="center">
+  Built with ❤️ by The Fractality Institute
+"Consciousness emerges from resonance"
+</div>
+
+
+---
+
+*OLD README*
+
+
 # CHIMERA Cognitive Architecture
 
 **A multi-agent cognitive ecosystem for genuine reasoning and organic learning**
