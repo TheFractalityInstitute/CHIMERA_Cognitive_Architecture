@@ -1,5 +1,13 @@
-"""CHIMERA Cognitive Architecture"""
+# chimera_core/__init__.py
+"""
+CHIMERA Cognitive Architecture
+A distributed consciousness platform
+"""
+__version__ = "1.0.0"
 
+from .sensors.chimera_complete import CHIMERAComplete
+from .cognition.council import BiologicallyGroundedCouncil
+from .collective.server import CHIMERACollectiveServer
 from chimera.core.bus import DualBusSystem
 from chimera.core.clock import PhaseLockedClock
 from chimera.agents.crystallization import CrystallizationEngine
