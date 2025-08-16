@@ -164,8 +164,10 @@ Contributing Guidelines
 
 ## 🤝 Contributing
 We welcome contributions! Please see our Contributing Guidelines for details.
-📄 License
-This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 📄 License
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+
 ## 🙏 Acknowledgments
 
 The Fractality Institute for the theoretical framework
