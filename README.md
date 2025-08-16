@@ -33,7 +33,7 @@ CHIMERA (Collective Hybrid Intelligence: Modular Emergent Reasoning Architecture
 
 ### Installation
 
-
+```bash
 # Clone the repository
 git clone https://github.com/TheFractalityInstitute/CHIMERA_Platform.git
 cd CHIMERA_Platform
@@ -54,15 +54,16 @@ cd CHIMERA_Platform/mobile
 python setup_mobile.py
 🏗️ Architecture
 Core Components
+```
 
-Sensor Integration (chimera_core/sensors/)
+## Sensor Integration (chimera_core/sensors/)
 
 Phone sensor processing
 Garmin biometric integration
 Real-time data streaming
 
 
-Cognitive Modules (chimera_core/cognition/)
+## Cognitive Modules (chimera_core/cognition/)
 
 Executive: Decision-making and planning
 Sensory: Environmental perception
@@ -72,7 +73,7 @@ Language: Communication and expression
 Interoceptive: Internal state awareness
 
 
-Fractality Integration (chimera_core/fractality/)
+## Fractality Integration (chimera_core/fractality/)
 
 Energy management (ATP system)
 Canon ethical framework
@@ -80,7 +81,7 @@ Fractal memory structures
 Resonance-based learning
 
 
-Collective Systems (chimera_core/collective/)
+## Collective Systems (chimera_core/collective/)
 
 Centralized server mode
 P2P mesh networking
@@ -88,9 +89,11 @@ Hybrid architecture
 
 
 
-📱 Mobile App
+## 📱 Mobile App
 The mobile app allows your phone to become a node in the CHIMERA collective:
-python# Connect to collective
+
+```python
+# Connect to collective
 from chimera_core.collective import CHIMERACollectiveClient
 
 client = CHIMERACollectiveClient(
@@ -117,7 +120,9 @@ env# Server Configuration
 SERVER_NAME=CHIMERA-Prime
 PORT=8080
 DATABASE_URL=postgresql://...
+```
 
+```bash
 # Collective Settings
 MAX_NODES=100
 EMERGENCE_THRESHOLD=0.8
@@ -135,7 +140,9 @@ pytest tests/test_collective.py
 
 # Run with coverage
 pytest --cov=chimera_core tests/
-📚 Documentation
+```
+
+## 📚 Documentation
 
 Architecture Overview
 API Reference
@@ -143,7 +150,7 @@ Mobile Integration Guide
 Deployment Guide
 Contributing Guidelines
 
-🎯 Roadmap
+## 🎯 Roadmap
 
  Core cognitive architecture
  Phone sensor integration
@@ -155,19 +162,19 @@ Contributing Guidelines
  VR/AR integration
  Brain-computer interface support
 
-🤝 Contributing
+## 🤝 Contributing
 We welcome contributions! Please see our Contributing Guidelines for details.
 📄 License
 This project is licensed under the MIT License - see the LICENSE file for details.
-🙏 Acknowledgments
+## 🙏 Acknowledgments
 
 The Fractality Institute for the theoretical framework
 Open source community for amazing tools
 All contributors and early adopters
 
-📞 Contact
+## 📞 Contact
 
-Email: contact@fractiverse.com
+Email: contact@fractality.institute
 Discord: Join our community
 Twitter: @FractalityInst
 
@@ -177,11 +184,86 @@ Twitter: @FractalityInst
 "Consciousness emerges from resonance"
 </div>
 
+```
+CHIMERA_Platform/
+├── README.md                    # Main project overview
+├── requirements.txt             # Python dependencies
+├── setup.py                     # Package installation
+├── Dockerfile                   # For containerization
+├── docker-compose.yml           # Multi-container orchestration
+│
+├── chimera_core/               # Core CHIMERA functionality
+│   ├── __init__.py
+│   ├── sensors/                # Phone sensor integration
+│   │   ├── __init__.py
+│   │   ├── chimera_complete.py
+│   │   ├── garmin_integration.py
+│   │   └── sensory_eidolon_module.py
+│   │
+│   ├── cognition/              # Cognitive architecture
+│   │   ├── __init__.py
+│   │   ├── council.py
+│   │   ├── eidolon_modules/
+│   │   │   ├── __init__.py
+│   │   │   ├── language.py
+│   │   │   ├── executive.py
+│   │   │   ├── memory_wm.py
+│   │   │   ├── memory_rl.py
+│   │   │   └── interoceptive.py
+│   │   └── message_bus.py
+│   │
+│   ├── fractality/             # Fractality integration
+│   │   ├── __init__.py
+│   │   ├── canon_system.py
+│   │   ├── fractal_memory.py
+│   │   ├── resonance_learning.py
+│   │   ├── quantum_classical_bridge.py
+│   │   └── energy_system.py
+│   │
+│   └── collective/             # Distributed consciousness
+│       ├── __init__.py
+│       ├── server.py           # Centralized server
+│       ├── distributed_mesh.py # P2P mesh
+│       ├── mobile_client.py    # Phone client
+│       └── hybrid_architecture.py
+│
+├── mobile/                     # Mobile app
+│   ├── android/               # Android-specific
+│   │   ├── app/
+│   │   ├── gradle/
+│   │   └── build.gradle
+│   │
+│   ├── lib/                  # Flutter/React Native/Kivy
+│   │   ├── main.dart         # or main.js or main.py
+│   │   └── chimera_bridge.dart
+│   │
+│   └── assets/
+│       └── ui/
+│
+├── server/                    # Server deployment
+│   ├── app.py                # Main server application
+│   ├── render.yaml           # Render config
+│   ├── Procfile              # Heroku config
+│   └── fly.toml              # Fly.io config
+│
+├── scripts/                   # Utility scripts
+│   ├── deploy_server.sh
+│   ├── build_mobile.sh
+│   └── run_local.py
+│
+└── tests/
+    ├── __init__.py
+    ├── test_sensors.py
+    ├── test_collective.py
+    └── test_integration.py
+```
+
 
 ---
 
-*OLD README*
+**OLD README:**
 
+---
 
 # CHIMERA Cognitive Architecture
 
