@@ -26,6 +26,7 @@ from chimera_core.collective.local import LocalCollective
 from chimera_core.sensors.embodiment import EmbodiedSenses
 from chimera_core.sensors import termux_sensors
 from chimera_core.collective.graph_brain import GraphBrain
+from chimera_core.language.local_llm import LocalLLM
 
 # --------------------------------------------------------------------------- #
 # App + shared state
@@ -63,6 +64,16 @@ def _init_brain():
 
 
 _init_brain()
+
+# The local voice (Ollama) — optional. When a local model is running on this
+# device, CHIMERA speaks through it, grounded in its own mind; otherwise it uses
+# the simple built-in chat. Nothing leaves the device either way.
+local_llm = LocalLLM()
+LLM_ON = local_llm.available()
+if LLM_ON:
+    print(f"✓ Local voice online — CHIMERA will speak through '{local_llm.model}' 🗣️")
+else:
+    print("· No local model running — using the simple built-in voice (see docs/LOCAL_MODEL_SETUP.md)")
 
 # A dedicated asyncio loop for the (async) interact() calls.
 _loop = asyncio.new_event_loop()
@@ -252,12 +263,32 @@ def on_message(data):
         return
 
     node = collective.get_or_create(name)
+    # Always run the organic engine: it grows the concept graph and stats, and
+    # supplies the simple fallback reply.
     result = run_async(node.learning.interact(text))
+    reply = result["response"]
+    voice = "simple"
+
+    # If a local model is running, let it speak — grounded in this mind's own
+    # words, felt state, and recent experiences. Falls back on any failure.
+    if LLM_ON:
+        body = senses_by_name.get(name)
+        grounded = local_llm.respond(
+            name,
+            text,
+            words=list(node.learning.language.vocabulary.keys()),
+            feeling=body.feeling() if body else None,
+            experiences=node.learning.development_log[-5:],
+        )
+        if grounded:
+            reply = grounded
+            voice = "gemma"
 
     emit(
         "response",
         {
-            "text": result["response"],
+            "text": reply,
+            "voice": voice,
             "confidence": result["understanding"],
             "thoughts_formed": result["thoughts_formed"],
             "words_known": result["words_known"],

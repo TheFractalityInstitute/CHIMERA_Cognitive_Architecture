@@ -29,6 +29,7 @@ tree for staged revival.
 | Device embodiment (felt state) | `chimera_core/sensors/embodiment.py` | **Working, tested** |
 | Native phone sensors (Termux) | `chimera_core/sensors/termux_sensors.py` | **Working, tested** |
 | Cloud brain (Neo4j graph) | `chimera_core/collective/graph_brain.py` | **Working, tested + wired** |
+| Local voice (Ollama LLM) | `chimera_core/language/local_llm.py` | **Working, tested + wired** |
 | Family web UI (multi-node collective) | `web/app.py`, `web/templates/index.html` | **Working** |
 | In-process collective coordinator | `chimera_core/collective/local.py` | **Working, tested** |
 | Collective hub (shared knowledge) | `chimera_core/collective/hub.py` | **Working, tested** |
