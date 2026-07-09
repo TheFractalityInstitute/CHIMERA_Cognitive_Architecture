@@ -26,6 +26,11 @@ data/snapshots/
 chimera_learning_state.json
 chimera_collective.db
 
+# Secrets — cloud brain credentials (NEVER commit these)
+chimera.env
+.env
+*.credentials
+
 # IDE / OS
 .vscode/
 .idea/
