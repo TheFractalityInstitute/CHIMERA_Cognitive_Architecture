@@ -274,7 +274,11 @@
 
     socket.on('response', (d) => {
       let t = d.text;
-      if (d.confidence !== undefined) t += `  ·  ${Math.round(d.confidence*100)}% understood`;
+      // The "% understood" is the simple engine's self-rating; don't attach it to
+      // the local model's voice.
+      if (d.voice !== 'gemma' && d.confidence !== undefined) {
+        t += `  ·  ${Math.round(d.confidence*100)}% understood`;
+      }
       addMsg(t, 'chi');
       document.getElementById('s-thoughts').textContent = d.thoughts_formed ?? '0';
       document.getElementById('s-words').textContent = d.words_known ?? '0';
