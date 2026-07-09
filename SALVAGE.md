@@ -26,13 +26,15 @@ tree for staged revival.
 | Web chat server (Flask + Socket.IO) | `web/app.py` | **Working** — rewritten around the engine |
 | Web UI | `web/templates/index.html` | **Working** — untouched; contract matches |
 | Entry point | `run.py` | **Working** |
+| Family web UI (multi-node collective) | `web/app.py`, `web/templates/index.html` | **Working** |
+| In-process collective coordinator | `chimera_core/collective/local.py` | **Working, tested** |
 | Collective hub (shared knowledge) | `chimera_core/collective/hub.py` | **Working, tested** |
 | Collective node client | `chimera_core/collective/client.py` | **Working, tested** |
 | Collective demo | `scripts/collective_demo.py` | **Working** — one command |
-| Tests | `tests/test_smoke.py`, `tests/test_collective.py` | **9 passing** |
+| Tests | `tests/test_smoke.py`, `test_collective.py`, `test_local_collective.py` | **13 passing** |
 | Packaging | `pyproject.toml` | `pip install -e .` |
 
-Run the node:  `pip install -e . && python run.py` → http://localhost:5000
+Run the family UI:  `pip install -e . && python run.py` → http://localhost:5000
 Run the collective demo:  `python scripts/collective_demo.py`
 Run the networked hub:  `python -m chimera_core.collective.hub` → http://localhost:5001
 
@@ -91,21 +93,21 @@ tests:
 
 ## Known rough edges in the working core
 
-- `OrganicLearningSystem.teach()` only writes a `taught: True` vocabulary entry
-  when the word is *new*, but `process_utterance` (run first) has usually already
-  inserted it — so taught concepts can stay `taught: False`. Left as-is
-  intentionally: it's a learning-semantics decision for the author, not a crash.
 - Response generation is deliberately primitive (single-word curiosity prompts).
   That's by design — this is organic acquisition, not a pretrained model.
+- `teach()` was made *authoritative* (July 2026): teaching a word now records its
+  meaning and marks it `taught` even if the word was already auto-discovered
+  (e.g. because it appears in its own examples). Previously the taught definition
+  could be silently dropped — which showed up as empty definitions propagating
+  through the collective. Vocabulary keys are normalized to lowercase.
 
 ## Suggested roadmap
 
 1. **Solidify the core** (done): boots, learns, persists, tested. ✅
 2. **Working collective** (done): nodes pool learned concepts through a hub,
    with a demo, a live dashboard, and tests. ✅
-3. **Wire the collective into the web node** — add a "join collective" control to
-   the chat UI so teaching CHIMERA in the browser shares concepts to the hub and
-   absorbs others' concepts live (the pieces exist; it's UI glue).
+3. **Family web UI** (done): one app, each browser names its own CHIMERA, and
+   teaching a word propagates live to everyone else's node with attribution. ✅
 4. **Revive memory persistence** — fix `chimera.memory.*` → `chimera_core.memory.*`,
    remove the loop-spawning from `MemoryManager.__init__`, add tests, then let
    nodes persist thoughts to SQLite instead of a single JSON blob, and give the

@@ -1,713 +1,273 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CHIMERA Cognitive Interface</title>
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #0a0e27 0%, #161b3d 100%);
-            color: #e0e8f0;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        /* Header */
-        header {
-            background: rgba(10, 14, 39, 0.95);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(99, 102, 241, 0.2);
-            padding: 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 1.2rem;
-            font-weight: bold;
-        }
-        
-        .status-indicator {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #10b981;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        
-        .header-stats {
-            display: flex;
-            gap: 2rem;
-            font-size: 0.9rem;
-        }
-        
-        .stat {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        
-        .stat-value {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #6366f1;
-        }
-        
-        .stat-label {
-            font-size: 0.8rem;
-            color: #94a3b8;
-        }
-        
-        /* Main Layout */
-        .container {
-            flex: 1;
-            display: flex;
-            gap: 1rem;
-            padding: 1rem;
-            overflow: hidden;
-        }
-        
-        /* Chat Section */
-        .chat-section {
-            flex: 2;
-            display: flex;
-            flex-direction: column;
-            background: rgba(22, 27, 61, 0.5);
-            border-radius: 12px;
-            border: 1px solid rgba(99, 102, 241, 0.1);
-            overflow: hidden;
-        }
-        
-        .messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 1rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-        }
-        
-        .message {
-            padding: 0.75rem 1rem;
-            border-radius: 12px;
-            max-width: 80%;
-            animation: fadeIn 0.3s;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .user-message {
-            align-self: flex-end;
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-        }
-        
-        .chimera-message {
-            align-self: flex-start;
-            background: rgba(30, 41, 59, 0.8);
-            border: 1px solid rgba(99, 102, 241, 0.2);
-        }
-        
-        .curiosity-message {
-            align-self: flex-start;
-            background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
-            border-left: 4px solid #f9a8d4;
-        }
-        
-        .milestone-message {
-            align-self: center;
-            background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
-            text-align: center;
-            font-weight: bold;
-        }
-        
-        .message-confidence {
-            font-size: 0.8rem;
-            opacity: 0.7;
-            margin-top: 0.25rem;
-        }
-        
-        /* Input Area */
-        .input-area {
-            padding: 1rem;
-            background: rgba(10, 14, 39, 0.5);
-            border-top: 1px solid rgba(99, 102, 241, 0.1);
-            display: flex;
-            gap: 0.5rem;
-        }
-        
-        .input-field {
-            flex: 1;
-            background: rgba(30, 41, 59, 0.5);
-            border: 1px solid rgba(99, 102, 241, 0.2);
-            border-radius: 8px;
-            padding: 0.75rem;
-            color: #e0e8f0;
-            font-size: 1rem;
-            transition: all 0.3s;
-        }
-        
-        .input-field:focus {
-            outline: none;
-            border-color: #6366f1;
-            background: rgba(30, 41, 59, 0.8);
-        }
-        
-        button {
-            padding: 0.75rem 1.5rem;
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            border: none;
-            border-radius: 8px;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        
-        button:hover {
-            transform: scale(1.05);
-        }
-        
-        /* Side Panel */
-        .side-panel {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        
-        .panel-section {
-            background: rgba(22, 27, 61, 0.5);
-            border-radius: 12px;
-            border: 1px solid rgba(99, 102, 241, 0.1);
-            padding: 1rem;
-        }
-        
-        .panel-header {
-            font-weight: bold;
-            margin-bottom: 0.75rem;
-            color: #6366f1;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        /* Thoughts Display */
-        .thoughts-list {
-            max-height: 200px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-        
-        .thought {
-            padding: 0.5rem;
-            background: rgba(30, 41, 59, 0.3);
-            border-radius: 6px;
-            font-size: 0.9rem;
-            border-left: 3px solid #6366f1;
-        }
-        
-        .thought-crystallized {
-            border-left-color: #10b981;
-        }
-        
-        /* Concepts Grid */
-        .concepts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-            gap: 0.5rem;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        
-        .concept {
-            padding: 0.5rem;
-            background: rgba(30, 41, 59, 0.3);
-            border-radius: 6px;
-            text-align: center;
-            font-size: 0.9rem;
-            border: 1px solid transparent;
-            transition: all 0.3s;
-        }
-        
-        .concept:hover {
-            border-color: #6366f1;
-            background: rgba(99, 102, 241, 0.1);
-        }
-        
-        .concept-confidence {
-            font-size: 0.7rem;
-            opacity: 0.6;
-        }
-        
-        /* Development Stage */
-        .development-stage {
-            padding: 1rem;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
-            border-radius: 8px;
-            text-align: center;
-            font-size: 0.9rem;
-        }
-        
-        /* Action Buttons */
-        .action-buttons {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-        
-        .action-button {
-            padding: 0.5rem 1rem;
-            background: rgba(99, 102, 241, 0.2);
-            border: 1px solid rgba(99, 102, 241, 0.3);
-            border-radius: 6px;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .action-button:hover {
-            background: rgba(99, 102, 241, 0.3);
-        }
-        
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            .container {
-                flex-direction: column;
-            }
-            
-            .header-stats {
-                display: none;
-            }
-            
-            .side-panel {
-                display: none;
-            }
-        }
-        
-        /* Loading Spinner */
-        .spinner {
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(99, 102, 241, 0.3);
-            border-top-color: #6366f1;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        /* Teach Modal */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .modal.active {
-            display: flex;
-        }
-        
-        .modal-content {
-            background: #1e293b;
-            padding: 2rem;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 500px;
-        }
-        
-        .modal-header {
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-        }
-        
-        .modal-input {
-            width: 100%;
-            margin-bottom: 1rem;
-            padding: 0.75rem;
-            background: rgba(30, 41, 59, 0.5);
-            border: 1px solid rgba(99, 102, 241, 0.2);
-            border-radius: 8px;
-            color: #e0e8f0;
-        }
-        
-        .modal-buttons {
-            display: flex;
-            gap: 1rem;
-            justify-content: flex-end;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CHIMERA</title>
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <style>
+    :root{
+      --bg:#0e1330; --panel:#171d3d; --panel2:#1e2650; --line:#2b356a;
+      --text:#eef1ff; --dim:#a7b0da; --accent:#8b7dff; --accent2:#4fd1c5;
+      --you:#3b4bd8; --chi:#2a3161; --glow:#ffd76b;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      background:radial-gradient(1200px 600px at 20% -10%,#2a2170 0%,var(--bg) 55%);
+      color:var(--text);min-height:100vh}
+    button{font-family:inherit;cursor:pointer}
+    input,textarea{font-family:inherit}
+
+    /* Name overlay */
+    #overlay{position:fixed;inset:0;background:rgba(6,9,26,.92);display:flex;
+      align-items:center;justify-content:center;z-index:50;padding:1rem}
+    .welcome{background:var(--panel);border:1px solid var(--line);border-radius:20px;
+      padding:2rem;max-width:440px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+    .welcome h1{font-size:2.2rem;margin:.2rem 0}
+    .welcome p{color:var(--dim);line-height:1.5}
+    .welcome input{width:100%;padding:.9rem 1rem;margin:1rem 0;border-radius:12px;
+      border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:1.1rem;text-align:center}
+    .big-btn{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0b1020;
+      border:none;border-radius:12px;padding:.9rem 1.4rem;font-size:1.1rem;font-weight:700;width:100%}
+    .big-btn:hover{filter:brightness(1.08)}
+    .suggests{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center;margin-top:.8rem}
+    .suggests button{background:var(--panel2);border:1px solid var(--line);color:var(--dim);
+      border-radius:999px;padding:.35rem .8rem;font-size:.85rem}
+
+    /* Layout */
+    header{display:flex;align-items:center;gap:.8rem;padding:1rem 1.3rem;border-bottom:1px solid var(--line)}
+    header .logo{font-size:1.6rem}
+    header .who{font-weight:700}
+    header .badge{margin-left:auto;background:var(--panel2);border:1px solid var(--line);
+      border-radius:999px;padding:.4rem .9rem;font-size:.9rem}
+    header .badge b{color:var(--accent2)}
+    .wrap{display:grid;grid-template-columns:1fr 340px;gap:1rem;padding:1rem;max-width:1200px;margin:0 auto}
+    @media(max-width:840px){.wrap{grid-template-columns:1fr}}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:1rem}
+    .card h3{margin:.1rem 0 .8rem;font-size:1rem;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+
+    /* Chat */
+    #chat{height:48vh;min-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:.6rem;padding-right:.3rem}
+    .msg{max-width:85%;padding:.7rem .95rem;border-radius:14px;line-height:1.4;white-space:pre-wrap;word-break:break-word}
+    .msg.you{align-self:flex-end;background:var(--you)}
+    .msg.chi{align-self:flex-start;background:var(--chi)}
+    .msg.sys{align-self:center;background:transparent;color:var(--dim);font-size:.9rem;text-align:center}
+    .composer{display:flex;gap:.5rem;margin-top:.8rem}
+    .composer input{flex:1;padding:.8rem 1rem;border-radius:12px;border:1px solid var(--line);
+      background:var(--panel2);color:var(--text);font-size:1rem}
+    .composer button{background:var(--accent);border:none;border-radius:12px;padding:0 1.2rem;font-weight:700;color:#0b1020}
+
+    /* Teach */
+    .teach-grid{display:grid;gap:.5rem}
+    .teach-grid input{padding:.7rem .9rem;border-radius:10px;border:1px solid var(--line);
+      background:var(--panel2);color:var(--text)}
+    .teach-btn{background:linear-gradient(135deg,var(--accent2),#7bed9f);color:#08240f;
+      border:none;border-radius:10px;padding:.7rem;font-weight:700;font-size:1rem}
+
+    /* Sidebar */
+    .cc-num{font-size:2rem;font-weight:800;color:var(--accent2)}
+    .cc-label{color:var(--dim);font-size:.9rem}
+    .roster{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.6rem}
+    .chip{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:.25rem .7rem;font-size:.85rem}
+    .chip.me{border-color:var(--accent2);color:var(--accent2)}
+    #feed{display:flex;flex-direction:column;gap:.4rem;max-height:150px;overflow-y:auto}
+    .feed-item{background:var(--panel2);border-left:3px solid var(--glow);border-radius:8px;
+      padding:.5rem .7rem;font-size:.9rem;animation:pop .4s ease}
+    @keyframes pop{from{transform:translateY(-6px);opacity:0}to{transform:none;opacity:1}}
+    #concepts{display:flex;flex-wrap:wrap;gap:.4rem}
+    .concept{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:.4rem .7rem;font-size:.9rem}
+    .concept.fromcoll{border-color:var(--glow)}
+    .concept .g{opacity:.7;font-size:.8rem}
+    .empty{color:var(--dim);font-size:.9rem;font-style:italic}
+    .stat-row{display:flex;gap:1rem;margin-top:.5rem;color:var(--dim);font-size:.85rem;flex-wrap:wrap}
+    .stat-row b{color:var(--text)}
+  </style>
 </head>
 <body>
-    <!-- Header -->
-    <header>
-        <div class="logo">
-            <div class="status-indicator"></div>
-            CHIMERA
-        </div>
-        <div class="header-stats">
-            <div class="stat">
-                <div class="stat-value" id="thought-count">0</div>
-                <div class="stat-label">Thoughts</div>
-            </div>
-            <div class="stat">
-                <div class="stat-value" id="concept-count">0</div>
-                <div class="stat-label">Concepts</div>
-            </div>
-            <div class="stat">
-                <div class="stat-value" id="conversation-count">0</div>
-                <div class="stat-label">Conversations</div>
-            </div>
-        </div>
-    </header>
-    
-    <!-- Main Container -->
-    <div class="container">
-        <!-- Chat Section -->
-        <div class="chat-section">
-            <div class="messages" id="messages"></div>
-            <div class="input-area">
-                <input type="text" class="input-field" id="message-input" 
-                       placeholder="Talk to CHIMERA..." autofocus>
-                <button onclick="sendMessage()">Send</button>
-            </div>
-        </div>
-        
-        <!-- Side Panel -->
-        <div class="side-panel">
-            <!-- Development Stage -->
-            <div class="panel-section">
-                <div class="panel-header">Development Stage</div>
-                <div class="development-stage" id="development-stage">
-                    Initializing...
-                </div>
-            </div>
-            
-            <!-- Recent Thoughts -->
-            <div class="panel-section">
-                <div class="panel-header">
-                    Recent Thoughts
-                    <div class="spinner" id="thoughts-spinner" style="display:none"></div>
-                </div>
-                <div class="thoughts-list" id="thoughts-list"></div>
-            </div>
-            
-            <!-- Concepts -->
-            <div class="panel-section">
-                <div class="panel-header">Known Concepts</div>
-                <div class="concepts-grid" id="concepts-grid"></div>
-            </div>
-            
-            <!-- Actions -->
-            <div class="panel-section">
-                <div class="panel-header">Actions</div>
-                <div class="action-buttons">
-                    <button class="action-button" onclick="showTeachModal()">Teach Concept</button>
-                    <button class="action-button" onclick="requestCuriosity()">Ask Curiosity</button>
-                    <button class="action-button" onclick="saveMemory()">Save Memory</button>
-                    <button class="action-button" onclick="exportData()">Export Data</button>
-                </div>
-            </div>
-        </div>
+
+  <div id="overlay">
+    <div class="welcome">
+      <div style="font-size:3rem">🧠</div>
+      <h1>Meet CHIMERA</h1>
+      <p>CHIMERA is a little mind that learns words from you. Give yours a name to begin — everyone in your family can have their own, and they'll share what they learn!</p>
+      <input id="name-input" placeholder="Name your CHIMERA…" maxlength="30" />
+      <button class="big-btn" onclick="startSession()">Start ✨</button>
+      <div class="suggests">
+        <button onclick="fillName(&quot;Dante's CHIMERA&quot;)">Dante's CHIMERA</button>
+        <button onclick="fillName(&quot;Mom's CHIMERA&quot;)">Mom's CHIMERA</button>
+        <button onclick="fillName(&quot;Dad's CHIMERA&quot;)">Dad's CHIMERA</button>
+      </div>
     </div>
-    
-    <!-- Teach Modal -->
-    <div class="modal" id="teach-modal">
-        <div class="modal-content">
-            <div class="modal-header">Teach CHIMERA</div>
-            <input type="text" class="modal-input" id="teach-concept" placeholder="Concept (e.g., 'tree')">
-            <input type="text" class="modal-input" id="teach-definition" placeholder="Definition (e.g., 'A living plant with trunk and leaves')">
-            <input type="text" class="modal-input" id="teach-examples" placeholder="Examples (comma-separated)">
-            <div class="modal-buttons">
-                <button class="action-button" onclick="hideTeachModal()">Cancel</button>
-                <button onclick="teachConcept()">Teach</button>
-            </div>
+  </div>
+
+  <header>
+    <span class="logo">🧠</span>
+    <span class="who" id="who">CHIMERA</span>
+    <span class="badge">Collective: <b id="cc-badge">0%</b> · <span id="node-count">0</span> minds</span>
+  </header>
+
+  <div class="wrap">
+    <div>
+      <div class="card">
+        <h3>Talk to CHIMERA</h3>
+        <div id="chat"></div>
+        <div class="composer">
+          <input id="chat-input" placeholder="Say something…" onkeydown="if(event.key==='Enter')send()" />
+          <button onclick="send()">Send</button>
         </div>
+        <div class="stat-row">
+          <span>💭 Thoughts: <b id="s-thoughts">0</b></span>
+          <span>📚 Words: <b id="s-words">0</b></span>
+          <span id="s-stage">…</span>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:1rem">
+        <h3>Teach CHIMERA a word</h3>
+        <div class="teach-grid">
+          <input id="t-word" placeholder="Word (e.g. dragon)" />
+          <input id="t-def" placeholder="What it means (e.g. a big fire-breathing creature)" />
+          <input id="t-ex" placeholder="Examples, separated by commas (optional)" />
+          <button class="teach-btn" onclick="teach()">Teach it! 🎓</button>
+        </div>
+      </div>
     </div>
-    
-    <script>
-        // WebSocket connection
-        const socket = io();
-        let sessionId = null;
-        
-        // DOM elements
-        const messagesEl = document.getElementById('messages');
-        const inputEl = document.getElementById('message-input');
-        const thoughtsListEl = document.getElementById('thoughts-list');
-        const conceptsGridEl = document.getElementById('concepts-grid');
-        const developmentStageEl = document.getElementById('development-stage');
-        
-        // Connect to server
-        socket.on('connect', () => {
-            console.log('Connected to CHIMERA');
-            updateStatus();
-            loadThoughts();
-            loadConcepts();
-        });
-        
-        socket.on('connected', (data) => {
-            sessionId = data.session_id;
-            addMessage('CHIMERA: ' + data.message, 'chimera');
-        });
-        
-        socket.on('disconnect', () => {
-            console.log('Disconnected from CHIMERA');
-            document.querySelector('.status-indicator').style.background = '#ef4444';
-        });
-        
-        // Handle responses
-        socket.on('response', (data) => {
-            let message = data.text;
-            if (data.confidence !== undefined) {
-                message += ` [${Math.round(data.confidence * 100)}% understood]`;
-            }
-            addMessage(message, 'chimera');
-            
-            // Update stats
-            document.getElementById('thought-count').textContent = data.thoughts_formed || '0';
-            if (data.words_known) {
-                document.getElementById('concept-count').textContent = data.words_known;
-            }
-            if (data.development_stage) {
-                developmentStageEl.textContent = data.development_stage;
-            }
-            
-            // Refresh thoughts and concepts
-            setTimeout(() => {
-                loadThoughts();
-                loadConcepts();
-            }, 500);
-        });
-        
-        // Handle curiosities
-        socket.on('curiosity', (data) => {
-            const message = `[Curiosity] ${data.question}`;
-            addMessage(message, 'curiosity');
-            
-            if (data.spontaneous) {
-                // Play a subtle notification sound if spontaneous
-                playNotificationSound();
-            }
-        });
-        
-        // Handle milestones
-        socket.on('milestone', (data) => {
-            addMessage(`🎉 ${data.text}`, 'milestone');
-        });
-        
-        // Handle stats updates
-        socket.on('stats_update', (stats) => {
-            if (stats.total_thoughts !== undefined) {
-                document.getElementById('thought-count').textContent = stats.total_thoughts;
-            }
-            if (stats.total_concepts !== undefined) {
-                document.getElementById('concept-count').textContent = stats.total_concepts;
-            }
-            if (stats.total_conversations !== undefined) {
-                document.getElementById('conversation-count').textContent = stats.total_conversations;
-            }
-        });
-        
-        // Send message
-        function sendMessage() {
-            const text = inputEl.value.trim();
-            if (!text) return;
-            
-            addMessage(text, 'user');
-            socket.emit('message', { text: text });
-            inputEl.value = '';
-        }
-        
-        // Add message to chat
-        function addMessage(text, type) {
-            const messageEl = document.createElement('div');
-            messageEl.className = `message ${type}-message`;
-            messageEl.textContent = text;
-            messagesEl.appendChild(messageEl);
-            messagesEl.scrollTop = messagesEl.scrollHeight;
-        }
-        
-        // Load thoughts
-        async function loadThoughts() {
-            try {
-                const response = await fetch('/api/thoughts');
-                const thoughts = await response.json();
-                
-                thoughtsListEl.innerHTML = '';
-                thoughts.slice(0, 10).forEach(thought => {
-                    const thoughtEl = document.createElement('div');
-                    thoughtEl.className = `thought ${thought.type === 'crystallized' ? 'thought-crystallized' : ''}`;
-                    thoughtEl.textContent = thought.content || 'Unnamed thought';
-                    thoughtsListEl.appendChild(thoughtEl);
-                });
-            } catch (error) {
-                console.error('Error loading thoughts:', error);
-            }
-        }
-        
-        // Load concepts
-        async function loadConcepts() {
-            try {
-                const response = await fetch('/api/concepts');
-                const concepts = await response.json();
-                
-                conceptsGridEl.innerHTML = '';
-                concepts.slice(0, 20).forEach(concept => {
-                    const conceptEl = document.createElement('div');
-                    conceptEl.className = 'concept';
-                    conceptEl.innerHTML = `
-                        ${concept.term}
-                        <div class="concept-confidence">${Math.round(concept.confidence * 100)}%</div>
-                    `;
-                    conceptsGridEl.appendChild(conceptEl);
-                });
-            } catch (error) {
-                console.error('Error loading concepts:', error);
-            }
-        }
-        
-        // Update status
-        async function updateStatus() {
-            try {
-                const response = await fetch('/api/status');
-                const status = await response.json();
-                
-                document.getElementById('thought-count').textContent = status.thoughts || '0';
-                document.getElementById('concept-count').textContent = status.concepts || '0';
-                document.getElementById('conversation-count').textContent = status.conversations || '0';
-                
-                if (status.development_stage) {
-                    developmentStageEl.textContent = status.development_stage;
-                }
-                
-                document.querySelector('.status-indicator').style.background = 
-                    status.online ? '#10b981' : '#ef4444';
-            } catch (error) {
-                console.error('Error updating status:', error);
-            }
-        }
-        
-        // Request curiosity
-        function requestCuriosity() {
-            socket.emit('request_curiosity');
-        }
-        
-        // Save memory
-        async function saveMemory() {
-            try {
-                const response = await fetch('/api/memory/save', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({})
-                });
-                const result = await response.json();
-                if (result.success) {
-                    addMessage(`Memory saved: ${result.path}`, 'chimera');
-                }
-            } catch (error) {
-                console.error('Error saving memory:', error);
-            }
-        }
-        
-        // Export data
-        function exportData() {
-            window.open('/api/export/json', '_blank');
-        }
-        
-        // Teach modal functions
-        function showTeachModal() {
-            document.getElementById('teach-modal').classList.add('active');
-        }
-        
-        function hideTeachModal() {
-            document.getElementById('teach-modal').classList.remove('active');
-        }
-        
-        function teachConcept() {
-            const concept = document.getElementById('teach-concept').value;
-            const definition = document.getElementById('teach-definition').value;
-            const examples = document.getElementById('teach-examples').value
-                .split(',').map(e => e.trim()).filter(e => e);
-            
-            if (concept && definition) {
-                socket.emit('teach', {
-                    concept: concept,
-                    explanation: definition,
-                    examples: examples
-                });
-                
-                hideTeachModal();
-                
-                // Clear inputs
-                document.getElementById('teach-concept').value = '';
-                document.getElementById('teach-definition').value = '';
-                document.getElementById('teach-examples').value = '';
-            }
-        }
-        
-        // Play notification sound
-        function playNotificationSound() {
-            // Create a simple notification beep
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            oscillator.frequency.value = 800;
-            oscillator.type = 'sine';
-            
-            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-            
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.2);
-        }
-        
-        // Keyboard shortcuts
-        inputEl.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
-        
-        // Periodic updates
-        setInterval(updateStatus, 30000);  // Update every 30 seconds
-        
-        // Initial load
-        updateStatus();
-    </script>
+
+    <div>
+      <div class="card">
+        <h3>🌐 The Collective</h3>
+        <div class="cc-num" id="cc-num">0%</div>
+        <div class="cc-label" id="cc-label">Dormant — need 2+ minds</div>
+        <div class="roster" id="roster"></div>
+        <div style="margin-top:1rem">
+          <div class="cc-label" style="margin-bottom:.4rem">Shared just now:</div>
+          <div id="feed"><div class="empty">Teach a word to share it with everyone…</div></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:1rem">
+        <h3>What CHIMERA knows</h3>
+        <div id="concepts"><div class="empty">Nothing yet — teach it something!</div></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const socket = io();
+    let myName = null;
+
+    function fillName(n){ document.getElementById('name-input').value = n; }
+    function startSession(){
+      const n = document.getElementById('name-input').value.trim() || "My CHIMERA";
+      myName = n;
+      socket.emit('join', { name: n });
+    }
+
+    socket.on('joined', (d) => {
+      myName = d.name;
+      document.getElementById('who').textContent = d.name;
+      document.getElementById('overlay').style.display = 'none';
+      applyStats(d.stats);
+      addMsg("Hi! I'm " + d.name + ". Talk to me, or teach me a word below! 🌱", 'chi');
+      loadConcepts();
+    });
+
+    socket.on('response', (d) => {
+      let t = d.text;
+      if (d.confidence !== undefined) t += `  ·  ${Math.round(d.confidence*100)}% understood`;
+      addMsg(t, 'chi');
+      document.getElementById('s-thoughts').textContent = d.thoughts_formed ?? '0';
+      document.getElementById('s-words').textContent = d.words_known ?? '0';
+      if (d.development_stage) document.getElementById('s-stage').textContent = d.development_stage;
+      loadConcepts();
+    });
+
+    socket.on('teach_result', (d) => {
+      let m = `🎓 ${myName} learned "${d.concept}"!`;
+      if (d.shared_with > 0) m += ` Shared with ${d.shared_with} other mind${d.shared_with>1?'s':''}. 🌐`;
+      addMsg(m, 'sys');
+      loadConcepts();
+    });
+
+    socket.on('collective_learned', (d) => {
+      addFeed(`🌐 Learned "${d.term}" from ${d.from}`);
+      addMsg(`🌐 The collective taught me "${d.term}" (from ${d.from})!`, 'sys');
+      loadConcepts();
+    });
+
+    socket.on('stats_update', (s) => applyStats(s));
+    socket.on('collective_state', (s) => {
+      const pct = Math.round((s.collective_consciousness||0)*100);
+      document.getElementById('cc-num').textContent = pct + '%';
+      document.getElementById('cc-badge').textContent = pct + '%';
+      document.getElementById('cc-label').textContent = s.emergence_label || '';
+      document.getElementById('node-count').textContent = s.node_count ?? 0;
+    });
+    socket.on('roster', (d) => {
+      const el = document.getElementById('roster');
+      el.innerHTML = (d.nodes||[]).map(n =>
+        `<span class="chip ${n===myName?'me':''}">${n===myName?'⭐ ':''}${escapeHtml(n)}</span>`).join('');
+    });
+
+    function applyStats(s){
+      if (!s) return;
+      document.getElementById('s-thoughts').textContent = s.thoughts ?? '0';
+      document.getElementById('s-words').textContent = s.concepts ?? '0';
+      if (s.development_stage) document.getElementById('s-stage').textContent = s.development_stage;
+    }
+
+    function send(){
+      const el = document.getElementById('chat-input');
+      const t = el.value.trim(); if(!t) return;
+      addMsg(t, 'you'); socket.emit('message', { text: t }); el.value='';
+    }
+
+    function teach(){
+      const word = document.getElementById('t-word').value.trim();
+      const def  = document.getElementById('t-def').value.trim();
+      const ex   = document.getElementById('t-ex').value.split(',').map(s=>s.trim()).filter(Boolean);
+      if(!word){ document.getElementById('t-word').focus(); return; }
+      socket.emit('teach', { concept: word, explanation: def, examples: ex });
+      document.getElementById('t-word').value='';
+      document.getElementById('t-def').value='';
+      document.getElementById('t-ex').value='';
+    }
+
+    async function loadConcepts(){
+      if(!myName) return;
+      try{
+        const r = await fetch('/api/concepts?name=' + encodeURIComponent(myName));
+        const list = await r.json();
+        const el = document.getElementById('concepts');
+        if(!list.length){ el.innerHTML = '<div class="empty">Nothing yet — teach it something!</div>'; return; }
+        el.innerHTML = list.slice(0,40).map(c => {
+          const coll = c.source === 'collective';
+          const tag = coll ? `<span class="g">🌐 ${escapeHtml(c.contributor||'')}</span>` : '';
+          return `<span class="concept ${coll?'fromcoll':''}">${escapeHtml(c.term)} ${tag}</span>`;
+        }).join('');
+      }catch(e){ /* ignore */ }
+    }
+
+    function addMsg(text, kind){
+      const c = document.getElementById('chat');
+      const d = document.createElement('div');
+      d.className = 'msg ' + kind; d.textContent = text;
+      c.appendChild(d); c.scrollTop = c.scrollHeight;
+    }
+    function addFeed(text){
+      const f = document.getElementById('feed');
+      if(f.querySelector('.empty')) f.innerHTML='';
+      const d = document.createElement('div');
+      d.className='feed-item'; d.textContent=text;
+      f.prepend(d);
+    }
+    function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m =>
+      ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+    document.getElementById('name-input').addEventListener('keydown', e => {
+      if(e.key === 'Enter') startSession();
+    });
+    document.getElementById('name-input').focus();
+  </script>
 </body>
 </html>

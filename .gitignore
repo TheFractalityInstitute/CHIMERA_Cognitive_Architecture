@@ -21,8 +21,10 @@ ENV/
 *.sqlite3
 data/*.db
 data/*.json
+data/nodes/
 data/snapshots/
 chimera_learning_state.json
+chimera_collective.db
 
 # IDE / OS
 .vscode/

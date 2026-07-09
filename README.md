@@ -19,14 +19,17 @@ understanding organically through conversation.**
 
 ## What actually works today
 
-- **`python run.py`** launches a Flask + Socket.IO web app at
-  `http://localhost:5000`.
-- You can **chat** with CHIMERA and **teach** it concepts; it forms "thoughts,"
-  discovers words, tracks developmental milestones, and reports a confidence
-  level for how much it understood.
-- Learning state **persists** to `data/chimera_state.json` between runs.
-- A **smoke test suite** (`tests/test_smoke.py`) proves the core imports, holds
-  a conversation, learns a taught concept, and round-trips its saved state.
+- **`python run.py`** launches a friendly web app at `http://localhost:5000`.
+  Open it in a browser, name your CHIMERA, and start chatting and teaching — no
+  terminal needed to use it.
+- It's a **family collective**: everyone can name their own CHIMERA (in another
+  tab or on another device on the same WiFi), and a word taught to one shows up
+  on the others live — "🌐 The collective taught me 'dragon' (from Dante's
+  CHIMERA)!"
+- Each CHIMERA forms "thoughts," discovers words, tracks developmental
+  milestones, and reports how much it understood.
+- Every CHIMERA's learning **persists** to `data/nodes/` between runs.
+- A **test suite** (`tests/`) covers the language core and the collective.
 
 ## Quick start
 
@@ -36,59 +39,43 @@ pip install -e .
 
 # 2. Run
 python run.py
-# → open http://localhost:5000
+```
 
-# 3. (optional) run the tests
+Then open **http://localhost:5000** in your browser, give your CHIMERA a name,
+and you're in. To play as a family, have each person open the same address —
+either in another browser tab, or from another device on your home WiFi using
+`http://<the-host-computer's-IP>:5000`. Everyone picks their own name.
+
+**Teach a word** with the *Teach CHIMERA a word* box (word + what it means), and
+watch it appear on everyone else's CHIMERA in the Collective panel. Just chatting
+also grows its vocabulary over time.
+
+```bash
+# (optional) run the tests
 pip install -e ".[dev]"
 pytest
 ```
 
-### First conversation
+## The collective — many minds, one shared memory
 
-```
-CHIMERA: Connected to CHIMERA
-You:     teach: tree | A living plant with a trunk and leaves | Oak trees are tall
-You:     what is a tree?
-CHIMERA: ... [confidence shown as a percentage]
-```
+Each person runs their **own** CHIMERA. When one learns a word, it's shared to
+the collective and every other CHIMERA absorbs it — so knowledge learned by one
+shows up for all, attributed to whoever taught it. The **collective consciousness
+%** rises as more minds pool more knowledge (it only counts when 2+ minds are
+actually sharing — one mind alone isn't a collective).
 
-Use the **Teach** button in the UI (or the `teach:` panel) to add concepts
-explicitly; just chatting also grows its vocabulary over time.
-
-## The collective — many nodes, one mind
-
-Each device runs its **own** CHIMERA node. A node can share what it has learned
-to a **collective hub**, and every other node absorbs it — so knowledge learned
-on one device shows up on all of them, attributed to the collective. Emergence
-metrics rise as more nodes pool more knowledge.
-
-See it in one command (no network needed):
+The web app runs the whole collective in one process, so the family experience
+needs nothing extra. There's also a **standalone demo** and a **networked hub**
+for going cross-machine:
 
 ```bash
-python scripts/collective_demo.py
+python scripts/collective_demo.py        # see two minds pool knowledge (no server)
+python -m chimera_core.collective.hub     # a networked hub + dashboard on :5001
 ```
 
-Run the real networked hub (a live dashboard at http://localhost:5001):
-
-```bash
-python -m chimera_core.collective.hub
-```
-
-Then connect nodes to it from Python:
-
-```python
-from chimera_core.language.chimera_language_learning import OrganicLearningSystem
-from chimera_core.collective.client import CollectiveNode, SocketNodeClient
-
-node = SocketNodeClient(CollectiveNode(OrganicLearningSystem("Alice"), "Alice"))
-node.connect()
-node.node.learning.teach("tree", "a living plant with a trunk")
-node.share("tree")   # → propagates to every other connected node
-```
-
-The collective *logic* (`chimera_core/collective/hub.py`,
-`chimera_core/collective/client.py`) is transport-free and unit-tested; the
-Socket.IO layer is a thin wrapper over it.
+The collective *logic* (`chimera_core/collective/hub.py`, `client.py`,
+`local.py`) is transport-free and unit-tested; the Socket.IO layers are thin
+wrappers over it.
 
 ## How the core works
 
@@ -110,7 +97,7 @@ organic language acquisition, not a chatbot that already knows things.
 ```
 chimera_core/
   language/chimera_language_learning.py   # ← the working brain (self-contained)
-  collective/hub.py  collective/client.py # ← the working collective (+ legacy refs)
+  collective/hub.py  client.py  local.py  # ← the working collective (+ legacy refs)
   memory/        core/        eidolon_modules/    # partially-integrated modules
   sensors/     ui/    integration/          # reference / not yet wired
 web/

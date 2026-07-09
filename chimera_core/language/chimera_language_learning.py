@@ -863,19 +863,30 @@ class OrganicLearningSystem:
                 }
                 self.language.process_utterance(example, example_context)
                 
-        # Create strong associations
-        if concept not in self.language.vocabulary:
-            self.language.vocabulary[concept] = {
+        # Create strong associations. Teaching is authoritative: even if the word
+        # was already auto-discovered (e.g. because it appears in its own
+        # examples), record the taught meaning and mark it as taught.
+        concept_key = concept.lower()
+        entry = self.language.vocabulary.get(concept_key)
+        if entry is None:
+            self.language.vocabulary[concept_key] = {
                 'count': len(examples) if examples else 1,
-                'meanings': [explanation],
+                'meanings': [explanation] if explanation else [],
                 'confidence': 0.7,
                 'taught': True
             }
-            
+        else:
+            entry['taught'] = True
+            entry['confidence'] = max(entry.get('confidence', 0.0), 0.7)
+            if explanation and explanation not in entry.setdefault('meanings', []):
+                entry['meanings'].append(explanation)
+            if examples:
+                entry['count'] = entry.get('count', 0) + len(examples)
+
         return {
-            'concept': concept,
+            'concept': concept_key,
             'learned': True,
-            'current_understanding': self.language.vocabulary.get(concept)
+            'current_understanding': self.language.vocabulary.get(concept_key)
         }
         
     def save_state(self, filepath: str):
