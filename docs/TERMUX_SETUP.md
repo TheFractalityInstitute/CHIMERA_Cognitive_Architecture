@@ -96,6 +96,13 @@ python run.py
 
 ## Troubleshooting
 
+- **"ImportError: dlopen failed: cannot locate symbol ... pyexpat"** (pip crashes)
+  → your packages are half-upgraded (a system library is older than Python). Sync
+  everything, then retry:
+  ```bash
+  pkg upgrade -y
+  python -m pip install flask flask-socketio flask-cors "python-socketio[client]" websocket-client
+  ```
 - **"pip: bad interpreter: .../python3.12: No such file or directory"** → a Python
   upgrade orphaned `pip`. Fix it with:
   ```bash
