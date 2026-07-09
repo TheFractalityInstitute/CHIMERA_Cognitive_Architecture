@@ -56,6 +56,27 @@ pip install -e ".[dev]"
 pytest
 ```
 
+## Senses — a first taste of embodiment
+
+CHIMERA can use your device's real sensors to have a *body-state*. Click
+**"Give CHIMERA senses"** in the Senses panel and (with your permission) it reads:
+
+- **Motion** (accelerometer): still · being carried · shaken
+- **Battery**: a natural "energy / tiredness" sense
+- **Light** (where the browser supports it): dark · dim · bright
+
+It reacts to what it feels ("Ooh — you picked me up!", "Whoa, you're shaking me!",
+"I'm getting sleepy… my energy is low"), and **words you teach get grounded in the
+sensation at that moment** — teach "wobble" while shaking the device and the word
+is tagged *"I feel shaken up."* That grounding is the real point of embodiment:
+understanding shaped by experience, not just symbols.
+
+**Note on phones:** browsers only allow motion sensors in a *secure context* —
+that's fine on the host computer's `localhost`, but a phone visiting
+`http://<ip>:5000` over plain WiFi will have motion blocked. Getting full phone
+senses needs an HTTPS step (a good next task) or the native/Termux path. Battery
+and the felt-state still work broadly.
+
 ## The collective — many minds, one shared memory
 
 Each person runs their **own** CHIMERA. When one learns a word, it's shared to

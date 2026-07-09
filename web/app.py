@@ -23,6 +23,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from chimera_core.collective.local import LocalCollective
+from chimera_core.sensors.embodiment import EmbodiedSenses
 
 # --------------------------------------------------------------------------- #
 # App + shared state
@@ -37,6 +38,7 @@ collective = LocalCollective(persist_dir=DATA_DIR)
 
 sessions: dict[str, str] = {}                      # sid -> node name
 name_sids: dict[str, set] = defaultdict(set)       # node name -> set of sids
+senses_by_name: dict[str, EmbodiedSenses] = {}     # node name -> its body-state
 
 # A dedicated asyncio loop for the (async) interact() calls.
 _loop = asyncio.new_event_loop()
@@ -151,6 +153,28 @@ def on_message(data):
     emit("stats_update", node_stats(name))
 
 
+@socketio.on("senses")
+def on_senses(data):
+    name = sessions.get(request.sid)
+    if not name:
+        return
+    body = senses_by_name.setdefault(name, EmbodiedSenses())
+    result = body.update(data or {})
+
+    emit(
+        "sense_state",
+        {
+            "feeling": result["feeling"],
+            "motion": result["motion"],
+            "light": result["light"],
+            "energy": result["energy"],
+        },
+    )
+    # A notable sensation (picked up, shaken, went dark…) becomes a spoken reaction.
+    if result["reaction"]:
+        emit("sensation", {"text": result["reaction"]})
+
+
 @socketio.on("teach")
 def on_teach(data):
     name = sessions.get(request.sid)
@@ -165,6 +189,15 @@ def on_teach(data):
 
     # Teach locally, then share with the whole collective.
     collective.teach(name, concept, explanation, examples)
+
+    # Ground the concept in what CHIMERA was sensing when it learned it.
+    body = senses_by_name.get(name)
+    if body is not None:
+        entry = collective.get_or_create(name).learning.language.vocabulary.get(concept.lower())
+        if entry is not None:
+            entry["felt"] = body.feeling()
+            collective._save(name)  # persist the grounding (teach() saved before this)
+
     events = collective.share(name, concept)
 
     emit(

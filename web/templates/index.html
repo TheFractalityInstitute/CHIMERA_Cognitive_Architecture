@@ -81,6 +81,11 @@
     .empty{color:var(--dim);font-size:.9rem;font-style:italic}
     .stat-row{display:flex;gap:1rem;margin-top:.5rem;color:var(--dim);font-size:.85rem;flex-wrap:wrap}
     .stat-row b{color:var(--text)}
+    .sense-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.6rem}
+    .sense{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:.3rem .6rem;font-size:.9rem}
+    .sense-btn{margin-top:.7rem;width:100%;border:none;border-radius:10px;padding:.7rem;font-weight:700;
+      font-size:1rem;background:linear-gradient(135deg,#ffd76b,#ff9f6b);color:#3a1f00}
+    .msg.sense{align-self:flex-start;background:linear-gradient(135deg,#4a3a12,#3a2a45);border:1px solid var(--glow)}
   </style>
 </head>
 <body>
@@ -146,6 +151,18 @@
       </div>
 
       <div class="card" style="margin-top:1rem">
+        <h3>🖐️ CHIMERA's Senses</h3>
+        <div class="cc-label" id="feeling">CHIMERA has no body yet.</div>
+        <div class="sense-row">
+          <span class="sense" id="sense-motion">🤸 —</span>
+          <span class="sense" id="sense-light">💡 —</span>
+          <span class="sense" id="sense-energy">🔋 —</span>
+        </div>
+        <button class="sense-btn" onclick="enableSenses()">Give CHIMERA senses ✨</button>
+        <div id="sense-note" class="cc-label" style="margin-top:.5rem;font-size:.8rem"></div>
+      </div>
+
+      <div class="card" style="margin-top:1rem">
         <h3>What CHIMERA knows</h3>
         <div id="concepts"><div class="empty">Nothing yet — teach it something!</div></div>
       </div>
@@ -155,6 +172,72 @@
   <script>
     const socket = io();
     let myName = null;
+
+    // ---- Embodiment: stream real device sensors into CHIMERA ----
+    let sensesOn = false, motionPeak = null, batteryLevel = null, lightLux = null;
+
+    async function enableSenses(){
+      const note = document.getElementById('sense-note');
+      try{
+        // iOS requires an explicit permission request from a user gesture.
+        if (typeof DeviceMotionEvent !== 'undefined' &&
+            typeof DeviceMotionEvent.requestPermission === 'function'){
+          const p = await DeviceMotionEvent.requestPermission();
+          if (p !== 'granted') note.textContent = 'Motion permission was declined.';
+        }
+        window.addEventListener('devicemotion', onMotion);
+      }catch(e){ note.textContent = 'Motion sensors are not available here.'; }
+
+      if (navigator.getBattery){
+        try{
+          const bat = await navigator.getBattery();
+          const read = () => { batteryLevel = bat.level; };
+          read(); bat.addEventListener('levelchange', read); bat.addEventListener('chargingchange', read);
+        }catch(e){}
+      }
+      try{
+        if ('AmbientLightSensor' in window){
+          const als = new AmbientLightSensor();
+          als.addEventListener('reading', () => { lightLux = als.illuminance; });
+          als.start();
+        }
+      }catch(e){}
+
+      sensesOn = true;
+      document.getElementById('feeling').textContent = 'Sensing…';
+      document.querySelector('.sense-btn').textContent = 'Senses are on 🟢';
+      setInterval(pushSenses, 500);
+      if (!note.textContent){
+        note.textContent = 'Move or shake your device! (On a phone over WiFi this needs HTTPS — see the README.)';
+      }
+    }
+
+    function onMotion(e){
+      const a = e.accelerationIncludingGravity; if (!a) return;
+      const m = Math.sqrt((a.x||0)**2 + (a.y||0)**2 + (a.z||0)**2);
+      if (motionPeak === null || m > motionPeak) motionPeak = m;
+    }
+
+    function pushSenses(){
+      if (!sensesOn) return;
+      const r = { t: Date.now()/1000 };
+      if (motionPeak !== null){ r.motion = motionPeak; motionPeak = null; }
+      if (batteryLevel !== null) r.battery = batteryLevel;
+      if (lightLux !== null) r.light = lightLux;
+      if (r.motion !== undefined || r.battery !== undefined || r.light !== undefined)
+        socket.emit('senses', r);
+    }
+
+    socket.on('sense_state', (s) => {
+      document.getElementById('feeling').textContent = s.feeling;
+      const M = {still:'🧘 still', moving:'🚶 moving', shaken:'😵 shaken'};
+      const L = {dark:'🌙 dark', dim:'🔅 dim', bright:'☀️ bright', unknown:'💡 —'};
+      const E = {low:'🪫 low', okay:'🔋 okay', full:'🔋 full', unknown:'🔋 —'};
+      document.getElementById('sense-motion').textContent = M[s.motion] || ('🤸 '+s.motion);
+      document.getElementById('sense-light').textContent  = L[s.light]  || ('💡 '+s.light);
+      document.getElementById('sense-energy').textContent = E[s.energy] || ('🔋 '+s.energy);
+    });
+    socket.on('sensation', (d) => addMsg(d.text, 'sense'));
 
     function fillName(n){ document.getElementById('name-input').value = n; }
     function startSession(){
