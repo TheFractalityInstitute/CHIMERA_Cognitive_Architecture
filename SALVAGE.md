@@ -28,6 +28,7 @@ tree for staged revival.
 | Entry point | `run.py` | **Working** |
 | Device embodiment (felt state) | `chimera_core/sensors/embodiment.py` | **Working, tested** |
 | Native phone sensors (Termux) | `chimera_core/sensors/termux_sensors.py` | **Working, tested** |
+| Cloud brain (Neo4j graph) | `chimera_core/collective/graph_brain.py` | **Built + self-test; wiring next** |
 | Family web UI (multi-node collective) | `web/app.py`, `web/templates/index.html` | **Working** |
 | In-process collective coordinator | `chimera_core/collective/local.py` | **Working, tested** |
 | Collective hub (shared knowledge) | `chimera_core/collective/hub.py` | **Working, tested** |
@@ -117,11 +118,13 @@ tests:
    Next for embodiment: more sensors (gyroscope, proximity, step counter,
    location), and feed sensations into `interact()` so a shake can drive a full
    cognitive response (the hook already exists).
-5. **Cloud collective / shared neural net** — back the collective hub's shared
-   concepts with a persistent graph DB (e.g. Neo4j) so devices anywhere feed one
-   growing network of concepts-and-connections, not just same-WiFi in-memory
-   sharing. The hub already models shared concepts, so this is mostly wiring +
-   a hosted endpoint.
+5. **Cloud collective / shared neural net** (in progress) — chosen model:
+   *individuals + a collective mind above them*. `graph_brain.py` implements the
+   Neo4j schema (Mind/Concept/Episode, PART_OF/KNOWS/EXPERIENCED/ABOUT) with a
+   self-test; `docs/NEO4J_SETUP.md` walks through a free Aura instance. **Next:**
+   once the self-test passes on a real instance, wire it into `web/app.py` so
+   nodes persist concepts + episodes and restore themselves from the cloud
+   (persistence of memory + continuity of experience).
 6. **Revive memory persistence** — fix `chimera.memory.*` → `chimera_core.memory.*`,
    remove the loop-spawning from `MemoryManager.__init__`, add tests, then let
    nodes persist thoughts to SQLite instead of a single JSON blob, and give the

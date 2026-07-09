@@ -21,6 +21,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# The cloud brain (shared persistent memory in Neo4j).
+cloud = [
+    "neo4j>=5.0",
+]
 # Heavier / not-yet-integrated subsystems. Install as those are revived.
 extras = [
     "scikit-learn>=1.3.0",
