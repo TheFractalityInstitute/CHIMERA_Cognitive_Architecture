@@ -143,6 +143,7 @@
         <h3>🌐 The Collective</h3>
         <div class="cc-num" id="cc-num">0%</div>
         <div class="cc-label" id="cc-label">Dormant — need 2+ minds</div>
+        <div class="cc-label" id="cloud-status" style="margin-top:.4rem"></div>
         <div class="roster" id="roster"></div>
         <div style="margin-top:1rem">
           <div class="cc-label" style="margin-bottom:.4rem">Shared just now:</div>
@@ -251,8 +252,24 @@
       document.getElementById('who').textContent = d.name;
       document.getElementById('overlay').style.display = 'none';
       applyStats(d.stats);
-      addMsg("Hi! I'm " + d.name + ". Talk to me, or teach me a word below! 🌱", 'chi');
+      if (d.remembered > 0) {
+        addMsg(`Welcome back — I'm ${d.name}. I remember ${d.remembered} word${d.remembered>1?'s':''}` +
+               (d.experiences > 0 ? ` and ${d.experiences} moment${d.experiences>1?'s':''} from before` : '') +
+               `. 🧠✨`, 'chi');
+      } else {
+        addMsg("Hi! I'm " + d.name + ". Talk to me, or teach me a word below! 🌱", 'chi');
+      }
       loadConcepts();
+    });
+
+    socket.on('cloud_status', (s) => {
+      const el = document.getElementById('cloud-status');
+      if (!el) return;
+      if (s.on) {
+        el.textContent = `☁️ Cloud memory: on · ${s.minds||0} minds, ${s.concepts||0} words, ${s.episodes||0} memories`;
+      } else {
+        el.textContent = '';
+      }
     });
 
     socket.on('response', (d) => {
