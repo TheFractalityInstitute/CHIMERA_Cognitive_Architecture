@@ -18,7 +18,9 @@ pkg update -y
 # Fully upgrade first so system libraries stay in sync with Python. Skipping this
 # can leave e.g. libexpat older than Python's pyexpat, which breaks pip with:
 #   ImportError: dlopen failed: cannot locate symbol "XML_SetHashSalt16Bytes"
-pkg upgrade -y
+# --force-confold keeps existing config files without the interactive
+# "which version do you want to keep?" prompt that confuses first-timers.
+DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::="--force-confold" upgrade
 pkg install -y python python-pip git termux-api python-numpy
 
 # Make sure pip matches the (possibly just-upgraded) Python.

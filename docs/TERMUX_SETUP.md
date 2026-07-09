@@ -96,6 +96,18 @@ python run.py
 
 ## Troubleshooting
 
+- **"Waiting for cache lock ... held by process NNNN (apt)"** → a package command
+  was interrupted (e.g. Termux was closed mid-upgrade) and left a stale lock.
+  Clear it and finish the upgrade non-interactively:
+  ```bash
+  pkill -9 apt 2>/dev/null; pkill -9 dpkg 2>/dev/null
+  rm -f $PREFIX/var/lib/apt/lists/lock $PREFIX/var/cache/apt/archives/lock \
+        $PREFIX/var/lib/dpkg/lock $PREFIX/var/lib/dpkg/lock-frontend
+  dpkg --configure -a
+  DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::="--force-confold" upgrade
+  ```
+- **A "which version do you want to keep?" prompt during upgrade** → just press
+  **Enter** to keep the default. (Our setup script avoids this prompt.)
 - **"ImportError: dlopen failed: cannot locate symbol ... pyexpat"** (pip crashes)
   → your packages are half-upgraded (a system library is older than Python). Sync
   everything, then retry:
