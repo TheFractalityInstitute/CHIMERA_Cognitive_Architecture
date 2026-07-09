@@ -15,6 +15,10 @@ echo
 #    Termux gotcha: "bad interpreter: .../python3.12: No such file or directory").
 echo "📦  Installing packages (python, pip, git, termux-api, numpy)..."
 pkg update -y
+# Fully upgrade first so system libraries stay in sync with Python. Skipping this
+# can leave e.g. libexpat older than Python's pyexpat, which breaks pip with:
+#   ImportError: dlopen failed: cannot locate symbol "XML_SetHashSalt16Bytes"
+pkg upgrade -y
 pkg install -y python python-pip git termux-api python-numpy
 
 # Make sure pip matches the (possibly just-upgraded) Python.
