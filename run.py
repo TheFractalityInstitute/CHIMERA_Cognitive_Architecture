@@ -35,8 +35,10 @@ def main():
     print("Open this URL in your browser to interact")
     print("="*50 + "\n")
     
-    # Run the app
-    socketio.run(app, host='0.0.0.0', port=5000, debug=False)
+    # Run the app. allow_unsafe_werkzeug lets the bundled dev server run for
+    # local/experimental use; put a real WSGI server in front for deployment.
+    socketio.run(app, host='0.0.0.0', port=5000, debug=False,
+                 allow_unsafe_werkzeug=True)
 
 if __name__ == '__main__':
     main()

@@ -1,57 +1,21 @@
 # chimera_core/__init__.py
 """
 CHIMERA Cognitive Architecture
-A distributed consciousness platform
+==============================
+
+An experimental multi-agent cognitive architecture that develops language and
+understanding organically through interaction.
+
+This package root is intentionally lightweight. Importing ``chimera_core`` must
+NOT eagerly pull in optional/heavy subsystems (sensors, collective networking,
+mobile UI), many of which are aspirational or have unmet dependencies. Import
+the concrete piece you need directly, e.g.::
+
+    from chimera_core.language.chimera_language_learning import OrganicLearningSystem
+
+See SALVAGE.md for the current status of each subsystem.
 """
-__version__ = "1.0.0"
 
-from .sensors.chimera_complete import CHIMERAComplete
-from .cognition.council import BiologicallyGroundedCouncil
-from .collective.server import CHIMERACollectiveServer
-from chimera.core.bus import DualBusSystem
-from chimera.core.clock import PhaseLockedClock
-from chimera.agents.crystallization import CrystallizationEngine
-from chimera.agents.sensory import SensoryAgent
-# ... import other agents
+__version__ = "0.2.0"
 
-import asyncio
-
-class CHIMERA:
-    """Main orchestrator maintaining your multi-agent ecosystem"""
-    
-    def __init__(self):
-        # Core infrastructure
-        self.bus = DualBusSystem()
-        self.clock = PhaseLockedClock()
-        
-        # Agent ecosystem - preserving your original design!
-        self.agents = {
-            'sensory_visual': SensoryAgent('visual'),
-            'sensory_auditory': SensoryAgent('auditory'),
-            'sensory_tactile': SensoryAgent('tactile'),
-            'crystallization': CrystallizationEngine(),
-            # ... all your other agents
-        }
-        
-        self.running = False
-        
-    async def run(self):
-        """Run the complete cognitive ecosystem"""
-        self.running = True
-        
-        # Start all agents
-        tasks = []
-        for agent in self.agents.values():
-            task = asyncio.create_task(
-                agent.run(self.bus, self.clock)
-            )
-            tasks.append(task)
-            
-        # Let them run
-        await asyncio.gather(*tasks)
-
-__all__ = [
-    'CHIMERAComplete',
-    'BiologicallyGroundedCouncil', 
-    'CHIMERACollectiveServer'
-]
+__all__ = ["__version__"]

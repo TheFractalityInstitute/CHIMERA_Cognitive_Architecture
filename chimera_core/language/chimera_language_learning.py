@@ -486,11 +486,40 @@ class OrganicLanguageProcessor:
         if not segments:
             return 0.0
             
-        recognized = sum(1 for s in segments 
-                        if s in self.vocabulary and 
+        recognized = sum(1 for s in segments
+                        if s in self.vocabulary and
                         self.vocabulary[s]['confidence'] > 0.3)
-        
+
         return recognized / len(segments)
+
+    def _update_from_exchange(self, text: str, response: str, context: Dict = None):
+        """
+        Learn from a completed exchange.
+
+        Records the exchange for later pattern mining and nudges the running
+        self-assessment. Understanding rises when we recognized most of what was
+        said and decays slightly otherwise (exponential moving averages).
+        """
+        segments = self._segment_utterance(text)
+        confidence = self._calculate_understanding_confidence(segments)
+
+        self.response_patterns.append({
+            'input': text,
+            'response': response,
+            'confidence': confidence,
+            'timestamp': time.time(),
+        })
+        if confidence > 0.5:
+            self.successful_exchanges.append((text, response))
+
+        # Exponential moving averages of our self-assessment.
+        self.understanding_confidence = (
+            0.9 * self.understanding_confidence + 0.1 * confidence
+        )
+        self.communication_success_rate = (
+            0.95 * self.communication_success_rate
+            + 0.05 * (1.0 if confidence > 0.5 else 0.0)
+        )
 
 # ================== Sensory Integration ==================
 
