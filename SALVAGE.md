@@ -28,7 +28,7 @@ tree for staged revival.
 | Entry point | `run.py` | **Working** |
 | Device embodiment (felt state) | `chimera_core/sensors/embodiment.py` | **Working, tested** |
 | Native phone sensors (Termux) | `chimera_core/sensors/termux_sensors.py` | **Working, tested** |
-| Cloud brain (Neo4j graph) | `chimera_core/collective/graph_brain.py` | **Built + self-test; wiring next** |
+| Cloud brain (Neo4j graph) | `chimera_core/collective/graph_brain.py` | **Working, tested + wired** |
 | Family web UI (multi-node collective) | `web/app.py`, `web/templates/index.html` | **Working** |
 | In-process collective coordinator | `chimera_core/collective/local.py` | **Working, tested** |
 | Collective hub (shared knowledge) | `chimera_core/collective/hub.py` | **Working, tested** |
@@ -118,13 +118,15 @@ tests:
    Next for embodiment: more sensors (gyroscope, proximity, step counter,
    location), and feed sensations into `interact()` so a shake can drive a full
    cognitive response (the hook already exists).
-5. **Cloud collective / shared neural net** (in progress) — chosen model:
-   *individuals + a collective mind above them*. `graph_brain.py` implements the
-   Neo4j schema (Mind/Concept/Episode, PART_OF/KNOWS/EXPERIENCED/ABOUT) with a
-   self-test; `docs/NEO4J_SETUP.md` walks through a free Aura instance. **Next:**
-   once the self-test passes on a real instance, wire it into `web/app.py` so
-   nodes persist concepts + episodes and restore themselves from the cloud
-   (persistence of memory + continuity of experience).
+5. **Cloud collective / shared neural net** (done) — model: *individuals + a
+   collective mind above them*. `graph_brain.py` implements the Neo4j schema
+   (Mind/Concept/Episode, PART_OF/KNOWS/EXPERIENCED/ABOUT); `web/app.py` restores
+   a CHIMERA's memory from the cloud on join, persists taught concepts + felt
+   sensations as episodes, and shows live cloud status. Set up with
+   `docs/NEO4J_SETUP.md`; degrades to local-only with no credentials. **Next
+   here:** real-time cross-device push (a teach on one phone appearing on another
+   phone elsewhere without a rejoin), and a "consolidation/sleep" pass that
+   distils the episode stream into durable concept links.
 6. **Revive memory persistence** — fix `chimera.memory.*` → `chimera_core.memory.*`,
    remove the loop-spawning from `MemoryManager.__init__`, add tests, then let
    nodes persist thoughts to SQLite instead of a single JSON blob, and give the

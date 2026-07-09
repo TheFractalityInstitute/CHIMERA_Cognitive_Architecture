@@ -25,6 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from chimera_core.collective.local import LocalCollective
 from chimera_core.sensors.embodiment import EmbodiedSenses
 from chimera_core.sensors import termux_sensors
+from chimera_core.collective.graph_brain import GraphBrain
 
 # --------------------------------------------------------------------------- #
 # App + shared state
@@ -40,6 +41,28 @@ collective = LocalCollective(persist_dir=DATA_DIR)
 sessions: dict[str, str] = {}                      # sid -> node name
 name_sids: dict[str, set] = defaultdict(set)       # node name -> set of sids
 senses_by_name: dict[str, EmbodiedSenses] = {}     # node name -> its body-state
+
+# The cloud brain (Neo4j) — optional. If credentials are present it becomes the
+# durable, shared memory; if not, everything runs locally exactly as before.
+brain = GraphBrain.from_env()
+BRAIN_ON = False
+mind_ids: dict[str, str] = {}                      # node name -> graph mind id
+
+
+def _init_brain():
+    global BRAIN_ON
+    if not brain.available():
+        print("· No cloud brain configured — memory is local only (see docs/NEO4J_SETUP.md)")
+        return
+    try:
+        brain.connect()
+        BRAIN_ON = True
+        print("✓ Cloud brain connected — CHIMERA will persist and remember ☁️")
+    except Exception as exc:
+        print(f"! Cloud brain not reachable ({exc}); continuing with local memory")
+
+
+_init_brain()
 
 # A dedicated asyncio loop for the (async) interact() calls.
 _loop = asyncio.new_event_loop()
@@ -82,6 +105,86 @@ def broadcast_collective():
     socketio.emit("roster", {"nodes": collective.roster()})
 
 
+# -- cloud brain helpers (all no-ops when BRAIN_ON is False) ------------------ #
+
+
+def _brain_mind(name: str):
+    """Ensure this CHIMERA exists in the cloud graph; return its mind id (or None)."""
+    if not BRAIN_ON:
+        return None
+    if name not in mind_ids:
+        try:
+            mind_ids[name] = brain.ensure_mind(name)
+        except Exception as exc:
+            print(f"! cloud ensure_mind failed: {exc}")
+            return None
+    return mind_ids[name]
+
+
+def _restore_from_cloud(name: str) -> dict:
+    """Pull a CHIMERA's remembered concepts from the cloud into its local mind."""
+    mind_id = _brain_mind(name)
+    if not mind_id:
+        return {"remembered": 0, "experiences": 0}
+    try:
+        node = collective.get_or_create(name)
+        concepts = brain.known_concepts(mind_id)
+        for c in concepts:
+            node.learning.teach(c["term"], c.get("definition") or "")
+            entry = node.learning.language.vocabulary.get(c["term"])
+            if entry is not None:
+                entry["source"] = "memory"  # restored from the cloud
+        collective._save(name)
+        experiences = len(brain.timeline(mind_id, limit=1000))
+        return {"remembered": len(concepts), "experiences": experiences}
+    except Exception as exc:
+        print(f"! cloud restore failed: {exc}")
+        return {"remembered": 0, "experiences": 0}
+
+
+def _brain_remember(name: str, term: str, definition: str, felt, teacher):
+    """Persist a taught concept + episode to the cloud (in the background)."""
+    mind_id = _brain_mind(name)
+    if not mind_id:
+        return
+
+    def work():
+        try:
+            brain.remember_concept(mind_id, term, definition, felt=felt, teacher=teacher)
+        except Exception as exc:
+            print(f"! cloud remember failed: {exc}")
+
+    socketio.start_background_task(work)
+
+
+def _brain_episode(name: str, kind: str, text: str, felt):
+    """Persist a non-concept experience (a sensation) to the cloud in the background."""
+    mind_id = _brain_mind(name)
+    if not mind_id:
+        return
+
+    def work():
+        try:
+            brain.record_episode(mind_id, kind, text, felt)
+        except Exception as exc:
+            print(f"! cloud episode failed: {exc}")
+
+    socketio.start_background_task(work)
+
+
+def emit_cloud_status(target_room=None):
+    payload = {"on": BRAIN_ON}
+    if BRAIN_ON:
+        try:
+            payload.update(brain.collective_state())
+        except Exception:
+            pass
+    if target_room:
+        socketio.emit("cloud_status", payload, room=target_room)
+    else:
+        socketio.emit("cloud_status", payload)
+
+
 # --------------------------------------------------------------------------- #
 # REST
 # --------------------------------------------------------------------------- #
@@ -116,7 +219,18 @@ def on_join(data):
     join_room(name)
 
     collective.get_or_create(name)
-    emit("joined", {"name": name, "stats": node_stats(name)})
+    # Bring this CHIMERA's memory back from the cloud, if it has one.
+    restored = _restore_from_cloud(name)
+    emit(
+        "joined",
+        {
+            "name": name,
+            "stats": node_stats(name),
+            "remembered": restored["remembered"],
+            "experiences": restored["experiences"],
+        },
+    )
+    emit_cloud_status(target_room=name)
     broadcast_collective()
 
 
@@ -171,9 +285,12 @@ def on_senses(data):
             "energy": result["energy"],
         },
     )
-    # A notable sensation (picked up, shaken, went dark…) becomes a spoken reaction.
+    # A notable sensation (picked up, shaken, went dark…) becomes a spoken reaction
+    # and a remembered experience in the cloud timeline.
     if result["reaction"]:
         emit("sensation", {"text": result["reaction"]})
+        event = result["events"][0] if result["events"] else "sensed"
+        _brain_episode(name, "sensed", event, result["feeling"])
 
 
 @socketio.on("teach")
@@ -192,20 +309,26 @@ def on_teach(data):
     collective.teach(name, concept, explanation, examples)
 
     # Ground the concept in what CHIMERA was sensing when it learned it.
+    felt = None
     body = senses_by_name.get(name)
     if body is not None:
+        felt = body.feeling()
         entry = collective.get_or_create(name).learning.language.vocabulary.get(concept.lower())
         if entry is not None:
-            entry["felt"] = body.feeling()
+            entry["felt"] = felt
             collective._save(name)  # persist the grounding (teach() saved before this)
 
     events = collective.share(name, concept)
+
+    # Persist to the cloud brain — the mind's own memory + the collective's.
+    _brain_remember(name, concept, explanation, felt, teacher=name)
 
     emit(
         "teach_result",
         {"success": True, "concept": concept, "shared_with": len(events)},
     )
     emit("stats_update", node_stats(name))
+    emit_cloud_status(target_room=name)
 
     # Tell every other node's browser what just arrived from the collective.
     for ev in events:
