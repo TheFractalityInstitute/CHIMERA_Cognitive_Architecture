@@ -1,394 +1,256 @@
 """
-Main web application for CHIMERA
-Integrates persistence, real-time updates, and learning visualization
+CHIMERA web application — family collective edition.
+
+One app, many minds. Each browser names its own CHIMERA node; all nodes live in
+this one process and share a collective, so teaching a word on one node flows to
+everyone else's node live. No terminal needed to use it — just open the page.
+
+Start it with:  python run.py   → http://localhost:5000
+Others on the same WiFi can join at  http://<your-computer-ip>:5000
 """
 
-from flask import Flask, render_template, jsonify, request, send_file
-from flask_socketio import SocketIO, emit, join_room, leave_room
-from flask_cors import CORS
 import asyncio
-import json
-import time
+import atexit
+import threading
+from collections import defaultdict
 from pathlib import Path
-from datetime import datetime
+
+from flask import Flask, render_template, jsonify, request
+from flask_socketio import SocketIO, emit, join_room, leave_room
+
 import sys
 
-# Add parent directory to path for imports
-sys.path.append(str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from chimera import CHIMERA
-from chimera.memory.manager import MemoryManager
-from chimera.learning.organic import OrganicLearningSystem
+from chimera_core.collective.local import LocalCollective
+from chimera_core.sensors.embodiment import EmbodiedSenses
+from chimera_core.sensors import termux_sensors
+
+# --------------------------------------------------------------------------- #
+# App + shared state
+# --------------------------------------------------------------------------- #
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'chimera-secret-key-change-in-production'
-CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+app.config["SECRET_KEY"] = "chimera-secret-key-change-in-production"
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
-# Initialize CHIMERA components
-config = {
-    'db_path': 'data/chimera.db',
-    'embedding_dim': 512,
-    'decay_rate': 0.001,
-    'consolidation_threshold': 0.7
-}
+DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "nodes"
+collective = LocalCollective(persist_dir=DATA_DIR)
 
-# Global instances
-chimera = None
-memory_manager = None
-learning_system = None
-active_sessions = {}
+sessions: dict[str, str] = {}                      # sid -> node name
+name_sids: dict[str, set] = defaultdict(set)       # node name -> set of sids
+senses_by_name: dict[str, EmbodiedSenses] = {}     # node name -> its body-state
 
-def initialize_chimera():
-    """Initialize CHIMERA with all components"""
-    global chimera, memory_manager, learning_system
-    
-    # Initialize memory manager
-    memory_manager = MemoryManager(config)
-    
-    # Initialize main CHIMERA system
-    chimera = CHIMERA()
-    chimera.memory_manager = memory_manager
-    
-    # Initialize learning system
-    learning_system = OrganicLearningSystem("chimera_web")
-    learning_system.memory_manager = memory_manager
-    
-    # Start CHIMERA in background
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(chimera.initialize())
-    
-    print("✓ CHIMERA initialized successfully")
+# A dedicated asyncio loop for the (async) interact() calls.
+_loop = asyncio.new_event_loop()
 
-# Initialize on startup
-initialize_chimera()
 
-# ============= REST API Endpoints =============
+def _run_loop():
+    asyncio.set_event_loop(_loop)
+    _loop.run_forever()
 
-@app.route('/')
+
+threading.Thread(target=_run_loop, daemon=True).start()
+
+
+def run_async(coro):
+    return asyncio.run_coroutine_threadsafe(coro, _loop).result()
+
+
+atexit.register(lambda: [collective._save(n) for n in collective.roster()])
+
+
+# --------------------------------------------------------------------------- #
+# Helpers
+# --------------------------------------------------------------------------- #
+
+
+def node_stats(name: str) -> dict:
+    node = collective.get_or_create(name)
+    ls = node.learning
+    return {
+        "name": name,
+        "thoughts": len(ls.reasoning.thought_network),
+        "concepts": len(ls.language.vocabulary),
+        "conversations": ls.conversation_count,
+        "development_stage": ls._get_development_stage(),
+    }
+
+
+def broadcast_collective():
+    socketio.emit("collective_state", collective.state())
+    socketio.emit("roster", {"nodes": collective.roster()})
+
+
+# --------------------------------------------------------------------------- #
+# REST
+# --------------------------------------------------------------------------- #
+
+
+@app.route("/")
 def index():
-    """Serve main interface"""
-    return render_template('index.html')
+    return render_template("index.html")
 
-@app.route('/api/status')
-def get_status():
-    """Get current CHIMERA status"""
-    status = {
-        'online': chimera is not None,
-        'thoughts': len(chimera.agents['crystallization'].insights) if chimera else 0,
-        'concepts': learning_system.total_words_learned if learning_system else 0,
-        'conversations': learning_system.conversation_count if learning_system else 0,
-        'curiosity_level': learning_system.curiosity_level if learning_system else 0,
-        'development_stage': learning_system._get_development_stage() if learning_system else "Not initialized",
-        'active_sessions': len(active_sessions),
-        'uptime': time.time() - chimera.start_time if chimera and hasattr(chimera, 'start_time') else 0
-    }
-    return jsonify(status)
 
-@app.route('/api/thoughts')
-async def get_thoughts():
-    """Get recent thoughts"""
-    thoughts = []
-    
-    # Get from crystallization engine
-    if chimera and 'crystallization' in chimera.agents:
-        for insight_id, insight in chimera.agents['crystallization'].insights.items():
-            thoughts.append({
-                'id': insight.id,
-                'type': 'crystallized',
-                'content': insight.linguistic_expression,
-                'confidence': insight.confidence,
-                'timestamp': insight.timestamp,
-                'verified': insight.verification_count > 0
-            })
-    
-    # Get from reasoning engine
-    if learning_system and learning_system.reasoning:
-        for thought_id, thought in learning_system.reasoning.thought_network.items():
-            thoughts.append({
-                'id': thought_id,
-                'type': 'thought',
-                'content': thought.symbolic_form,
-                'confidence': thought.confidence,
-                'connections': len(thought.connections),
-                'timestamp': thought.timestamp
-            })
-    
-    # Sort by timestamp, most recent first
-    thoughts.sort(key=lambda x: x['timestamp'], reverse=True)
-    
-    return jsonify(thoughts[:100])  # Return latest 100
+@app.route("/api/concepts")
+def api_concepts():
+    name = request.args.get("name", "")
+    return jsonify(collective.concepts_for(name))
 
-@app.route('/api/concepts')
-async def get_concepts():
-    """Get learned concepts"""
-    concepts = []
-    
-    if learning_system and learning_system.language:
-        for word, data in learning_system.language.vocabulary.items():
-            concepts.append({
-                'term': word,
-                'confidence': data.get('confidence', 0),
-                'count': data.get('count', 0),
-                'meanings': data.get('meanings', []),
-                'taught': data.get('taught', False)
-            })
-    
-    # Sort by confidence
-    concepts.sort(key=lambda x: x['confidence'], reverse=True)
-    
-    return jsonify(concepts)
 
-@app.route('/api/memory/save', methods=['POST'])
-async def save_memory():
-    """Save current memory state"""
-    try:
-        snapshot_name = request.json.get('name', None)
-        snapshot_path = await memory_manager.save_snapshot(snapshot_name)
-        
-        return jsonify({
-            'success': True,
-            'path': str(snapshot_path),
-            'timestamp': datetime.now().isoformat()
-        })
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+@app.route("/api/collective")
+def api_collective():
+    return jsonify(collective.state())
 
-@app.route('/api/memory/load', methods=['POST'])
-async def load_memory():
-    """Load memory state from snapshot"""
-    try:
-        snapshot_name = request.json.get('name')
-        await memory_manager.load_snapshot(snapshot_name)
-        
-        return jsonify({
-            'success': True,
-            'message': f'Loaded snapshot: {snapshot_name}'
-        })
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/api/export/<format>')
-async def export_data(format):
-    """Export conversation/learning data"""
-    if format == 'json':
-        data = {
-            'conversations': await memory_manager.db.export_conversations(),
-            'concepts': await memory_manager.db.export_concepts(),
-            'insights': await memory_manager.db.export_insights(),
-            'timestamp': datetime.now().isoformat()
-        }
-        
-        return jsonify(data)
-        
-    elif format == 'csv':
-        # Generate CSV file
-        import csv
-        import io
-        
-        output = io.StringIO()
-        writer = csv.writer(output)
-        
-        # Write conversations
-        writer.writerow(['Timestamp', 'Speaker', 'Message', 'Confidence'])
-        conversations = await memory_manager.db.export_conversations()
-        for conv in conversations:
-            writer.writerow([
-                conv['timestamp'],
-                conv['speaker'],
-                conv['message'],
-                conv.get('understanding_confidence', '')
-            ])
-        
-        # Create response
-        output.seek(0)
-        return send_file(
-            io.BytesIO(output.getvalue().encode()),
-            mimetype='text/csv',
-            as_attachment=True,
-            download_name=f'chimera_export_{int(time.time())}.csv'
-        )
+# --------------------------------------------------------------------------- #
+# WebSocket
+# --------------------------------------------------------------------------- #
 
-# ============= WebSocket Handlers =============
 
-@socketio.on('connect')
-def handle_connect():
-    """Handle new connection"""
-    session_id = request.sid
-    active_sessions[session_id] = {
-        'connected_at': time.time(),
-        'messages': 0
-    }
-    
-    emit('connected', {
-        'session_id': session_id,
-        'message': 'Connected to CHIMERA'
-    })
-    
-    # Join personal room for targeted messages
-    join_room(session_id)
-    
-    # Check for pending curiosities
-    check_and_send_curiosities(session_id)
+@socketio.on("join")
+def on_join(data):
+    name = ((data or {}).get("name") or "").strip() or "A CHIMERA"
+    sessions[request.sid] = name
+    name_sids[name].add(request.sid)
+    join_room(name)
 
-@socketio.on('disconnect')
-def handle_disconnect():
-    """Handle disconnection"""
-    session_id = request.sid
-    if session_id in active_sessions:
-        del active_sessions[session_id]
-    leave_room(session_id)
+    collective.get_or_create(name)
+    emit("joined", {"name": name, "stats": node_stats(name)})
+    broadcast_collective()
 
-@socketio.on('message')
-async def handle_message(data):
-    """Handle incoming message from user"""
-    session_id = request.sid
-    text = data.get('text', '').strip()
-    
+
+@socketio.on("disconnect")
+def on_disconnect():
+    name = sessions.pop(request.sid, None)
+    if name:
+        name_sids[name].discard(request.sid)
+        leave_room(name)
+
+
+@socketio.on("message")
+def on_message(data):
+    name = sessions.get(request.sid)
+    if not name:
+        return
+    text = ((data or {}).get("text") or "").strip()
     if not text:
         return
-    
-    # Update session stats
-    if session_id in active_sessions:
-        active_sessions[session_id]['messages'] += 1
-    
-    # Store user message
-    await memory_manager.store_conversation({
-        'session_id': session_id,
-        'timestamp': time.time(),
-        'speaker': 'user',
-        'message': text
-    })
-    
-    # Process through learning system
-    result = await learning_system.interact(text)
-    
-    # Store CHIMERA's response
-    await memory_manager.store_conversation({
-        'session_id': session_id,
-        'timestamp': time.time(),
-        'speaker': 'chimera',
-        'message': result['response'],
-        'understanding_confidence': result['understanding'],
-        'thoughts_formed': result.get('thoughts_formed', 0)
-    })
-    
-    # Send response
-    emit('response', {
-        'text': result['response'],
-        'confidence': result['understanding'],
-        'thoughts_formed': result['thoughts_formed'],
-        'words_known': result['words_known'],
-        'development_stage': result['development_stage'],
-        'curiosity': result['curiosity']
-    })
-    
-    # Broadcast learning milestones to all connected clients
-    if learning_system.development_log:
-        latest_milestone = learning_system.development_log[-1]
-        if latest_milestone != 'shown':
-            socketio.emit('milestone', {
-                'text': latest_milestone,
-                'timestamp': time.time()
-            }, broadcast=True)
-            learning_system.development_log.append('shown')
-    
-    # Update all clients with new stats
-    await broadcast_stats_update()
 
-@socketio.on('teach')
-async def handle_teach(data):
-    """Handle direct teaching"""
-    concept = data.get('concept', '')
-    explanation = data.get('explanation', '')
-    examples = data.get('examples', [])
-    
+    node = collective.get_or_create(name)
+    result = run_async(node.learning.interact(text))
+
+    emit(
+        "response",
+        {
+            "text": result["response"],
+            "confidence": result["understanding"],
+            "thoughts_formed": result["thoughts_formed"],
+            "words_known": result["words_known"],
+            "development_stage": result["development_stage"],
+        },
+    )
+    collective._save(name)
+    emit("stats_update", node_stats(name))
+
+
+@socketio.on("senses")
+def on_senses(data):
+    name = sessions.get(request.sid)
+    if not name:
+        return
+    body = senses_by_name.setdefault(name, EmbodiedSenses())
+    result = body.update(data or {})
+
+    emit(
+        "sense_state",
+        {
+            "feeling": result["feeling"],
+            "motion": result["motion"],
+            "light": result["light"],
+            "energy": result["energy"],
+        },
+    )
+    # A notable sensation (picked up, shaken, went dark…) becomes a spoken reaction.
+    if result["reaction"]:
+        emit("sensation", {"text": result["reaction"]})
+
+
+@socketio.on("teach")
+def on_teach(data):
+    name = sessions.get(request.sid)
+    if not name:
+        return
+    data = data or {}
+    concept = (data.get("concept") or "").strip()
+    explanation = (data.get("explanation") or "").strip()
+    examples = data.get("examples") or []
     if not concept:
         return
-    
-    # Teach the concept
-    result = learning_system.teach(concept, explanation, examples)
-    
-    # Store in database
-    await memory_manager.db.store_concept({
-        'term': concept,
-        'definition': explanation,
-        'examples': examples,
-        'confidence': result['current_understanding'].get('confidence', 0.7)
-    })
-    
-    emit('teach_result', {
-        'success': True,
-        'concept': concept,
-        'understanding': result['current_understanding']
-    })
-    
-    await broadcast_stats_update()
 
-@socketio.on('request_curiosity')
-def handle_curiosity_request():
-    """User requests to see CHIMERA's curiosity"""
-    session_id = request.sid
-    
-    # Get top curiosity from the engine
-    if chimera and chimera.agents.get('curiosity'):
-        curiosity = chimera.agents['curiosity'].get_next_curiosity()
-        if curiosity:
-            emit('curiosity', {
-                'question': curiosity['question'],
-                'target': curiosity['target'],
-                'priority': curiosity['priority']
-            }, room=session_id)
+    # Teach locally, then share with the whole collective.
+    collective.teach(name, concept, explanation, examples)
 
-def check_and_send_curiosities(session_id):
-    """Check if CHIMERA has curiosities to share"""
-    if not chimera:
-        return
-        
-    curiosity_engine = chimera.agents.get('curiosity')
-    if not curiosity_engine:
-        return
-        
-    # Check attention budget
-    if curiosity_engine.should_notify_user():
-        curiosity = curiosity_engine.get_next_curiosity()
-        if curiosity:
-            socketio.emit('curiosity', {
-                'question': curiosity['question'],
-                'target': curiosity['target'],
-                'priority': curiosity['priority'],
-                'spontaneous': True
-            }, room=session_id)
+    # Ground the concept in what CHIMERA was sensing when it learned it.
+    body = senses_by_name.get(name)
+    if body is not None:
+        entry = collective.get_or_create(name).learning.language.vocabulary.get(concept.lower())
+        if entry is not None:
+            entry["felt"] = body.feeling()
+            collective._save(name)  # persist the grounding (teach() saved before this)
 
-async def broadcast_stats_update():
-    """Broadcast updated stats to all connected clients"""
-    stats = {
-        'total_thoughts': len(learning_system.reasoning.thought_network),
-        'total_concepts': len(learning_system.language.vocabulary),
-        'total_conversations': learning_system.conversation_count,
-        'abstraction_level': learning_system.abstraction_level,
-        'active_users': len(active_sessions)
-    }
-    
-    socketio.emit('stats_update', stats, broadcast=True)
+    events = collective.share(name, concept)
 
-# ============= Background Tasks =============
+    emit(
+        "teach_result",
+        {"success": True, "concept": concept, "shared_with": len(events)},
+    )
+    emit("stats_update", node_stats(name))
 
-def background_curiosity_checker():
-    """Periodically check for curiosities to share"""
-    while True:
-        time.sleep(60)  # Check every minute
-        
-        for session_id in active_sessions:
-            # Don't spam - check attention budget
-            if active_sessions[session_id]['messages'] > 0:
-                check_and_send_curiosities(session_id)
+    # Tell every other node's browser what just arrived from the collective.
+    for ev in events:
+        socketio.emit(
+            "collective_learned",
+            {"term": ev["term"], "from": ev["from"], "definition": ev["definition"]},
+            room=ev["to"],
+        )
+        socketio.emit("stats_update", node_stats(ev["to"]), room=ev["to"])
 
-# Start background thread
-import threading
-curiosity_thread = threading.Thread(target=background_curiosity_checker, daemon=True)
-curiosity_thread.start()
+    broadcast_collective()
 
-if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000, debug=False)
+
+# --------------------------------------------------------------------------- #
+# Native device body (Termux) — this phone's real sensors feed its CHIMERA(s)
+# --------------------------------------------------------------------------- #
+
+
+def _apply_device_senses(reading: dict) -> None:
+    """A reading from the physical device flows into every active local node."""
+    for name, sids in list(name_sids.items()):
+        if not sids:
+            continue
+        body = senses_by_name.setdefault(name, EmbodiedSenses())
+        result = body.update(reading)
+        socketio.emit(
+            "sense_state",
+            {k: result[k] for k in ("feeling", "motion", "light", "energy")},
+            room=name,
+        )
+        if result["reaction"]:
+            socketio.emit("sensation", {"text": result["reaction"]}, room=name)
+
+
+def start_device_senses() -> None:
+    """If we're running on a phone (Termux), stream its hardware senses in."""
+    if termux_sensors.available():
+        print("✓ Termux sensors detected — CHIMERA has a body 🖐️")
+        socketio.start_background_task(termux_sensors.stream, _apply_device_senses)
+    else:
+        print("· No Termux sensors here — browser senses still work (see the Senses panel)")
+
+
+start_device_senses()
+
+
+if __name__ == "__main__":
+    socketio.run(app, host="0.0.0.0", port=5000, allow_unsafe_werkzeug=True)

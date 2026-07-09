@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Databases / runtime data
+*.db
+*.sqlite
+*.sqlite3
+data/*.db
+data/*.json
+data/nodes/
+data/snapshots/
+chimera_learning_state.json
+chimera_collective.db
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
