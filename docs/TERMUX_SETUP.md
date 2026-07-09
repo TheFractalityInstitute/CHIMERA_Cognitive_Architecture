@@ -96,6 +96,15 @@ python run.py
 
 ## Troubleshooting
 
+- **"pip: bad interpreter: .../python3.12: No such file or directory"** → a Python
+  upgrade orphaned `pip`. Fix it with:
+  ```bash
+  pkg install -y python-pip
+  python -m pip install flask flask-socketio flask-cors "python-socketio[client]" websocket-client
+  ```
+  (Always use `python -m pip` rather than bare `pip` on Termux.)
+- **"No module named 'flask'"** → the web dependencies didn't install (usually the
+  pip issue above). Run the two lines just above, then `python run.py` again.
 - **"termux-sensor: command not found"** → the **Termux:API app** isn't installed
   (Step 1), or you skipped `termux-api` in setup. Install the app, then re-run
   `pkg install -y termux-api`.

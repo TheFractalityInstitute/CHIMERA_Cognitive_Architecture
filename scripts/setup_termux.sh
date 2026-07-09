@@ -9,15 +9,21 @@ echo "🧠  Setting up CHIMERA for your phone..."
 echo
 
 # 1. System packages. We install numpy via pkg (not pip) because building it
-#    from source on a phone is slow and error-prone.
-echo "📦  Installing packages (python, git, termux-api, numpy)..."
+#    from source on a phone is slow and error-prone. We install python-pip via
+#    pkg too, and always invoke it as `python -m pip`, so that if a Python
+#    upgrade happens mid-setup the pip launcher can't end up orphaned (a common
+#    Termux gotcha: "bad interpreter: .../python3.12: No such file or directory").
+echo "📦  Installing packages (python, pip, git, termux-api, numpy)..."
 pkg update -y
-pkg install -y python git termux-api python-numpy
+pkg install -y python python-pip git termux-api python-numpy
+
+# Make sure pip matches the (possibly just-upgraded) Python.
+python -m ensurepip --upgrade 2>/dev/null || true
 
 # 2. Python web dependencies (these pip-install cleanly on Termux).
 echo "🐍  Installing CHIMERA's web dependencies..."
-pip install --upgrade pip
-pip install flask flask-socketio flask-cors "python-socketio[client]" websocket-client
+python -m pip install --upgrade pip
+python -m pip install flask flask-socketio flask-cors "python-socketio[client]" websocket-client
 
 # 3. Let Termux ask for storage + sensor access. The FIRST time CHIMERA reads a
 #    sensor, Android will pop up a permission request — tap Allow.
