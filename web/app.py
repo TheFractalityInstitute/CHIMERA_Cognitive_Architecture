@@ -24,6 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from chimera_core.collective.local import LocalCollective
 from chimera_core.sensors.embodiment import EmbodiedSenses
+from chimera_core.sensors import termux_sensors
 
 # --------------------------------------------------------------------------- #
 # App + shared state
@@ -216,6 +217,39 @@ def on_teach(data):
         socketio.emit("stats_update", node_stats(ev["to"]), room=ev["to"])
 
     broadcast_collective()
+
+
+# --------------------------------------------------------------------------- #
+# Native device body (Termux) — this phone's real sensors feed its CHIMERA(s)
+# --------------------------------------------------------------------------- #
+
+
+def _apply_device_senses(reading: dict) -> None:
+    """A reading from the physical device flows into every active local node."""
+    for name, sids in list(name_sids.items()):
+        if not sids:
+            continue
+        body = senses_by_name.setdefault(name, EmbodiedSenses())
+        result = body.update(reading)
+        socketio.emit(
+            "sense_state",
+            {k: result[k] for k in ("feeling", "motion", "light", "energy")},
+            room=name,
+        )
+        if result["reaction"]:
+            socketio.emit("sensation", {"text": result["reaction"]}, room=name)
+
+
+def start_device_senses() -> None:
+    """If we're running on a phone (Termux), stream its hardware senses in."""
+    if termux_sensors.available():
+        print("✓ Termux sensors detected — CHIMERA has a body 🖐️")
+        socketio.start_background_task(termux_sensors.stream, _apply_device_senses)
+    else:
+        print("· No Termux sensors here — browser senses still work (see the Senses panel)")
+
+
+start_device_senses()
 
 
 if __name__ == "__main__":

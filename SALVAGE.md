@@ -26,7 +26,8 @@ tree for staged revival.
 | Web chat server (Flask + Socket.IO) | `web/app.py` | **Working** — rewritten around the engine |
 | Web UI | `web/templates/index.html` | **Working** — untouched; contract matches |
 | Entry point | `run.py` | **Working** |
-| Device embodiment (browser senses) | `chimera_core/sensors/embodiment.py` | **Working, tested** |
+| Device embodiment (felt state) | `chimera_core/sensors/embodiment.py` | **Working, tested** |
+| Native phone sensors (Termux) | `chimera_core/sensors/termux_sensors.py` | **Working, tested** |
 | Family web UI (multi-node collective) | `web/app.py`, `web/templates/index.html` | **Working** |
 | In-process collective coordinator | `chimera_core/collective/local.py` | **Working, tested** |
 | Collective hub (shared knowledge) | `chimera_core/collective/hub.py` | **Working, tested** |
@@ -109,13 +110,19 @@ tests:
    with a demo, a live dashboard, and tests. ✅
 3. **Family web UI** (done): one app, each browser names its own CHIMERA, and
    teaching a word propagates live to everyone else's node with attribution. ✅
-4. **Device embodiment, level 1** (done): browser motion/battery/light stream into
-   a felt body-state; CHIMERA reacts, and taught words are grounded in what it was
-   sensing. Next for embodiment: an HTTPS option so phone motion works over WiFi,
-   then revive the native Termux sensor path (`sensors/mobile_sensors.py`) for
-   always-on, full-suite sensing, and feed sensations into `interact()` so they
-   can drive full cognitive responses (the hook already exists). ✅ (level 1)
-5. **Revive memory persistence** — fix `chimera.memory.*` → `chimera_core.memory.*`,
+4. **Device embodiment** (done): browser *and* native-phone (Termux) sensors
+   stream motion/battery/light into a felt body-state; CHIMERA reacts and grounds
+   taught words in what it was sensing. Each phone hosts its own CHIMERA and reads
+   its own hardware (`sensors/termux_sensors.py`, `docs/TERMUX_SETUP.md`). ✅
+   Next for embodiment: more sensors (gyroscope, proximity, step counter,
+   location), and feed sensations into `interact()` so a shake can drive a full
+   cognitive response (the hook already exists).
+5. **Cloud collective / shared neural net** — back the collective hub's shared
+   concepts with a persistent graph DB (e.g. Neo4j) so devices anywhere feed one
+   growing network of concepts-and-connections, not just same-WiFi in-memory
+   sharing. The hub already models shared concepts, so this is mostly wiring +
+   a hosted endpoint.
+6. **Revive memory persistence** — fix `chimera.memory.*` → `chimera_core.memory.*`,
    remove the loop-spawning from `MemoryManager.__init__`, add tests, then let
    nodes persist thoughts to SQLite instead of a single JSON blob, and give the
    hub durable shared memory.

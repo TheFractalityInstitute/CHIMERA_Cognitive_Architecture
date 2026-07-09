@@ -71,11 +71,22 @@ sensation at that moment** — teach "wobble" while shaking the device and the w
 is tagged *"I feel shaken up."* That grounding is the real point of embodiment:
 understanding shaped by experience, not just symbols.
 
-**Note on phones:** browsers only allow motion sensors in a *secure context* —
-that's fine on the host computer's `localhost`, but a phone visiting
-`http://<ip>:5000` over plain WiFi will have motion blocked. Getting full phone
-senses needs an HTTPS step (a good next task) or the native/Termux path. Battery
-and the felt-state still work broadly.
+### Run it on your phone (full native senses)
+
+The best embodiment is CHIMERA running **directly on an Android phone** via
+Termux, reading the device's real hardware (`chimera_core/sensors/termux_sensors.py`).
+On the phone you view it at `http://localhost:5000` — which browsers trust — so
+everything just works, and CHIMERA reads its own accelerometer, light, and
+battery natively even with the browser in the background.
+
+👉 **Step-by-step phone guide: [`docs/TERMUX_SETUP.md`](docs/TERMUX_SETUP.md)** —
+written for non-terminal folks. In short: install the **Termux** and **Termux:API**
+apps, `git clone` this repo, run `bash scripts/setup_termux.sh`, then `python run.py`.
+
+(On a laptop/desktop the browser Senses still work over `localhost`; a *phone*
+reaching a laptop over plain-WiFi `http://<ip>:5000` has motion blocked by the
+browser's secure-context rule — which is exactly why running on the phone itself
+is the better path.)
 
 ## The collective — many minds, one shared memory
 
