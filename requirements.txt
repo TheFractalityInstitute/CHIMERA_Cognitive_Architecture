@@ -5,6 +5,7 @@ flask>=2.3.0
 flask-socketio>=5.3.0
 flask-cors>=4.0.0
 python-socketio>=5.9.0
+websocket-client>=1.6.0
 numpy>=1.24.0
 
 # Optional — only needed by not-yet-integrated subsystems (see SALVAGE.md):

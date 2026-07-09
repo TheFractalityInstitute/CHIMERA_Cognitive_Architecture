@@ -26,10 +26,27 @@ tree for staged revival.
 | Web chat server (Flask + Socket.IO) | `web/app.py` | **Working** — rewritten around the engine |
 | Web UI | `web/templates/index.html` | **Working** — untouched; contract matches |
 | Entry point | `run.py` | **Working** |
-| Smoke tests | `tests/test_smoke.py` | **4 passing** |
+| Collective hub (shared knowledge) | `chimera_core/collective/hub.py` | **Working, tested** |
+| Collective node client | `chimera_core/collective/client.py` | **Working, tested** |
+| Collective demo | `scripts/collective_demo.py` | **Working** — one command |
+| Tests | `tests/test_smoke.py`, `tests/test_collective.py` | **9 passing** |
 | Packaging | `pyproject.toml` | `pip install -e .` |
 
-Run it: `pip install -e . && python run.py` → http://localhost:5000
+Run the node:  `pip install -e . && python run.py` → http://localhost:5000
+Run the collective demo:  `python scripts/collective_demo.py`
+Run the networked hub:  `python -m chimera_core.collective.hub` → http://localhost:5001
+
+### The collective is compatible with the single node — and now built on it
+
+An earlier version of this document framed "single node" and "collective" as two
+competing products. That was wrong about the *concept*: the intended architecture
+(each device runs its own node; nodes pool their learning into a collective) is
+coherent and layered, and the collective is now implemented **on top of** the
+working node. What was true is that the *old* collective code
+(`collective/server.py`, `collective/mobile_client.py`) targeted a different,
+never-built "embodied/quantum" agent interface (`chimera.energy`,
+`chimera.consciousness_state`, `chimera.canon`) and had missing imports — so it
+was rebuilt fresh against the real `OrganicLearningSystem` rather than bridged.
 
 ## What was broken (and how it was fixed)
 
@@ -62,8 +79,11 @@ tests:
 - `chimera_core/memory/` (`manager.py`, `persistence.py`, `cache.py`,
   `vector_store.py`) — SQLite + cache + vector store. Imports `chimera.memory.*`;
   `MemoryManager.__init__` also spawns asyncio tasks with no running loop.
-- `chimera_core/collective/` + `scripts/distributed_mesh.py` + `server/` — the
-  distributed "collective consciousness" networking. A separate product vision.
+- `chimera_core/collective/server.py`, `mobile_client.py`, `mesh_network.py`,
+  `hybrid_architecture.py` + `scripts/distributed_mesh.py` + `server/` — the
+  **old** "embodied/quantum" collective + P2P mesh. Superseded by the new
+  `hub.py`/`client.py`; kept as reference for ideas (phase-locking, mesh
+  routing, energy-aware coordination) not yet ported.
 - `chimera_core/sensors/`, `integration/`, `interface/`, `ui/`,
   `mobile/` — phone/Garmin biometrics and mobile app. Hardware-dependent.
 - `docs/NEED_SORTED/chimera-v05/06/07*.py` — the original monoliths. **Reference
@@ -81,22 +101,28 @@ tests:
 ## Suggested roadmap
 
 1. **Solidify the core** (done): boots, learns, persists, tested. ✅
-2. **Revive memory persistence** — fix `chimera.memory.*` → `chimera_core.memory.*`,
+2. **Working collective** (done): nodes pool learned concepts through a hub,
+   with a demo, a live dashboard, and tests. ✅
+3. **Wire the collective into the web node** — add a "join collective" control to
+   the chat UI so teaching CHIMERA in the browser shares concepts to the hub and
+   absorbs others' concepts live (the pieces exist; it's UI glue).
+4. **Revive memory persistence** — fix `chimera.memory.*` → `chimera_core.memory.*`,
    remove the loop-spawning from `MemoryManager.__init__`, add tests, then let
-   the web app persist thoughts to SQLite instead of a single JSON blob.
-3. **Revive the Council** — repoint its imports, replace the placeholder
-   Language/Interoceptive eidolons, and expose it as an *optional* deeper
-   reasoning path behind the existing chat.
-4. **Pick one big direction.** The repo currently blends two products: (a) this
-   single-node organic-learning companion, and (b) a distributed multi-device
-   "collective." They pull in different directions — choose (a) *or* (b) as the
-   headline and demote the other to a branch/experiment.
-5. Only then consider sensors / mobile / mesh, each as its own tested module.
+   nodes persist thoughts to SQLite instead of a single JSON blob, and give the
+   hub durable shared memory.
+5. **Revive the Council** — repoint its imports, replace the placeholder
+   Language/Interoceptive eidolons, expose it as an *optional* deeper reasoning
+   path behind the chat.
+6. Port the good ideas from the legacy collective (phase-locking, mesh routing,
+   energy-aware coordination) and consider sensors / mobile, each as its own
+   tested module.
 
 ## How to verify at any point
 
 ```bash
 pip install -e ".[dev]"
-pytest                 # core smoke tests must stay green
-python run.py          # http://localhost:5000 — chat + teach should work
+pytest                            # 9 tests (core + collective) must stay green
+python run.py                     # http://localhost:5000 — chat + teach
+python scripts/collective_demo.py # watch two nodes pool their knowledge
+python -m chimera_core.collective.hub  # live collective dashboard on :5001
 ```

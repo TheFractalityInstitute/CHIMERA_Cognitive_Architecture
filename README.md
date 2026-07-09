@@ -10,10 +10,11 @@ understanding organically through conversation.**
 > **Status (2026):** This repository was assembled from several earlier
 > experiments and, for a long time, did not run as an integrated whole. It has
 > now been given a working, tested **core**: a web chat interface backed by an
-> organic language-learning system. Many other modules in the tree (distributed
-> "collective" networking, phone/biometric sensors, mobile UI) are **not yet
-> integrated** and are kept as reference for future work. See
-> [`SALVAGE.md`](SALVAGE.md) for exactly what works, what doesn't, and the
+> organic language-learning system, plus a working **collective** that pools
+> multiple nodes into shared intelligence. Some modules in the tree
+> (phone/biometric sensors, mobile UI, the older "embodied/quantum" collective
+> code) are **not yet integrated** and are kept as reference for future work.
+> See [`SALVAGE.md`](SALVAGE.md) for exactly what works, what doesn't, and the
 > roadmap.
 
 ## What actually works today
@@ -54,6 +55,41 @@ CHIMERA: ... [confidence shown as a percentage]
 Use the **Teach** button in the UI (or the `teach:` panel) to add concepts
 explicitly; just chatting also grows its vocabulary over time.
 
+## The collective — many nodes, one mind
+
+Each device runs its **own** CHIMERA node. A node can share what it has learned
+to a **collective hub**, and every other node absorbs it — so knowledge learned
+on one device shows up on all of them, attributed to the collective. Emergence
+metrics rise as more nodes pool more knowledge.
+
+See it in one command (no network needed):
+
+```bash
+python scripts/collective_demo.py
+```
+
+Run the real networked hub (a live dashboard at http://localhost:5001):
+
+```bash
+python -m chimera_core.collective.hub
+```
+
+Then connect nodes to it from Python:
+
+```python
+from chimera_core.language.chimera_language_learning import OrganicLearningSystem
+from chimera_core.collective.client import CollectiveNode, SocketNodeClient
+
+node = SocketNodeClient(CollectiveNode(OrganicLearningSystem("Alice"), "Alice"))
+node.connect()
+node.node.learning.teach("tree", "a living plant with a trunk")
+node.share("tree")   # → propagates to every other connected node
+```
+
+The collective *logic* (`chimera_core/collective/hub.py`,
+`chimera_core/collective/client.py`) is transport-free and unit-tested; the
+Socket.IO layer is a thin wrapper over it.
+
 ## How the core works
 
 When you send text, the `OrganicLanguageProcessor` segments it, discovers or
@@ -74,12 +110,14 @@ organic language acquisition, not a chatbot that already knows things.
 ```
 chimera_core/
   language/chimera_language_learning.py   # ← the working brain (self-contained)
+  collective/hub.py  collective/client.py # ← the working collective (+ legacy refs)
   memory/        core/        eidolon_modules/    # partially-integrated modules
-  collective/    sensors/     ui/    integration/  # reference / not yet wired
+  sensors/     ui/    integration/          # reference / not yet wired
 web/
   app.py                                  # ← the working web server
   templates/index.html                    # ← the UI
-tests/test_smoke.py                       # ← core smoke tests
+scripts/collective_demo.py                # ← one-command collective demo
+tests/test_smoke.py  tests/test_collective.py   # ← passing tests
 docs/                                     # design notes; NEED_SORTED/ = raw archive
 SALVAGE.md                                # status + roadmap for reviving the rest
 ```
